@@ -78,6 +78,54 @@ class TestScientificFunctions(unittest.TestCase):
         with self.assertRaises(InvalidExpressionError):
             self.evaluator.evaluate("invalidfunc(5)")
 
+    def test_inverse_trig(self):
+        self.assertAlmostEqual(self.evaluator.evaluate("asin(1)", mode="RAD"), math.pi / 2)
+        self.assertAlmostEqual(self.evaluator.evaluate("asin(1)", mode="DEG"), 90.0)
+        self.assertAlmostEqual(self.evaluator.evaluate("acos(0)", mode="RAD"), math.pi / 2)
+        self.assertAlmostEqual(self.evaluator.evaluate("acos(0)", mode="DEG"), 90.0)
+        self.assertAlmostEqual(self.evaluator.evaluate("atan(1)", mode="RAD"), math.pi / 4)
+        self.assertAlmostEqual(self.evaluator.evaluate("atan(1)", mode="DEG"), 45.0)
+
+        # Domain errors
+        with self.assertRaises(MathOperationError):
+            self.evaluator.evaluate("asin(2)")
+        with self.assertRaises(MathOperationError):
+            self.evaluator.evaluate("acos(-1.5)")
+
+    def test_hyperbolic_functions(self):
+        self.assertAlmostEqual(self.evaluator.evaluate("sinh(0)"), 0.0)
+        self.assertAlmostEqual(self.evaluator.evaluate("cosh(0)"), 1.0)
+        self.assertAlmostEqual(self.evaluator.evaluate("tanh(0)"), 0.0)
+        
+        # Test large input error (overflow)
+        with self.assertRaises(MathOperationError):
+            self.evaluator.evaluate("sinh(1000)")
+        with self.assertRaises(MathOperationError):
+            self.evaluator.evaluate("cosh(1000)")
+
+    def test_exp_function(self):
+        self.assertAlmostEqual(self.evaluator.evaluate("exp(0)"), 1.0)
+        self.assertAlmostEqual(self.evaluator.evaluate("exp(1)"), math.e)
+        
+        # Test overflow
+        with self.assertRaises(MathOperationError):
+            self.evaluator.evaluate("exp(1000)")
+
+    def test_safe_pow_limits_and_factorial_limits(self):
+        # Exponent too large
+        with self.assertRaises(MathOperationError):
+            self.evaluator.evaluate("2 ^ 10000000")
+        # Log value too large (9^9^9 is 9^387420489)
+        with self.assertRaises(MathOperationError):
+            self.evaluator.evaluate("9 ^ 9 ^ 9")
+        
+        # Factorial too large (max 1000)
+        with self.assertRaises(MathOperationError):
+            self.evaluator.evaluate("factorial(1001)")
+        # Complex result not supported
+        with self.assertRaises(MathOperationError):
+            self.evaluator.evaluate("(-4) ^ 0.5")
+
 
 if __name__ == "__main__":
     unittest.main()

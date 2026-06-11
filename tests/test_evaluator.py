@@ -58,6 +58,11 @@ class TestEvaluatorBasic(unittest.TestCase):
         with self.assertRaises(InvalidExpressionError):
             self.evaluator.evaluate("")
 
+    def test_variable_evaluation(self):
+        self.assertEqual(self.evaluator.evaluate("x + 5", variables={"x": 10}), 15)
+        self.assertAlmostEqual(self.evaluator.evaluate("sin(x)", variables={"x": 0}), 0.0)
+        self.assertEqual(self.evaluator.evaluate("x * y", variables={"x": 3, "y": 4}), 12)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,4 +1,5 @@
 import unittest
+import os
 from features.memory import Memory
 from features.history import History
 
@@ -19,7 +20,12 @@ class TestFeatures(unittest.TestCase):
         self.assertEqual(mem.recall(), 0.0)
 
     def test_history_operations(self):
-        hist = History()
+        test_file = ".test_calculator_history"
+        # Ensure it starts clean
+        if os.path.exists(test_file):
+            os.remove(test_file)
+
+        hist = History(filename=test_file)
         self.assertEqual(hist.get_history(), [])
         self.assertIsNone(hist.get_last_entry())
 
@@ -34,6 +40,10 @@ class TestFeatures(unittest.TestCase):
         hist.clear_history()
         self.assertEqual(hist.get_history(), [])
         self.assertIsNone(hist.get_last_entry())
+
+        # Final cleanup
+        if os.path.exists(test_file):
+            os.remove(test_file)
 
 
 if __name__ == "__main__":

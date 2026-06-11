@@ -26,12 +26,40 @@ class Evaluator:
             ast.Sub: operator.sub,
             ast.Mult: operator.mul,
             ast.Div: operator.truediv,
-            ast.Pow: operator.pow,
+            ast.Pow: self.safe_pow,
             ast.USub: operator.neg,
             ast.UAdd: operator.pos,
         }
 
-    def evaluate(self, expression, mode="RAD"):
+    def safe_pow(self, base, exponent):
+        if base == 0 and exponent < 0:
+            raise DivisionByZeroError("Division by zero")
+        
+        try:
+            # Check for extremely large exponents to avoid hangs
+            if abs(exponent) > 1e6:
+                raise MathOperationError("Power calculation overflow")
+            
+            # Check size using logarithmic approximation
+            if base != 0:
+                import math
+                if abs(exponent) * math.log10(abs(base)) > 10000:
+                    raise MathOperationError("Power calculation overflow")
+            
+            result = operator.pow(base, exponent)
+            if isinstance(result, complex):
+                raise MathOperationError("Complex result not supported")
+            return result
+        except OverflowError:
+            raise MathOperationError("Power calculation overflow")
+        except ZeroDivisionError:
+            raise DivisionByZeroError("Division by zero")
+        except Exception as e:
+            if isinstance(e, CalculatorError):
+                raise
+            raise MathOperationError(str(e))
+
+    def evaluate(self, expression, mode="RAD", variables=None):
         """
         Parses and evaluates the mathematical expression safely.
         """
@@ -42,7 +70,7 @@ class Evaluator:
         
         try:
             node = ast.parse(parsed_expression, mode='eval')
-            return self._eval(node.body, mode)
+            return self._eval(node.body, mode, variables)
         except SyntaxError:
             raise InvalidExpressionError("Syntax error in expression")
         except ZeroDivisionError:
@@ -52,7 +80,7 @@ class Evaluator:
         except Exception as e:
             raise InvalidExpressionError(str(e))
 
-    def _eval(self, node, mode):
+    def _eval(self, node, mode, variables=None):
         if isinstance(node, ast.Constant):  # Python 3.8+
             if not isinstance(node.value, (int, float)) or isinstance(node.value, bool):
                 raise InvalidExpressionError("Unsupported constant value")
@@ -60,8 +88,8 @@ class Evaluator:
         elif hasattr(ast, 'Num') and isinstance(node, getattr(ast, 'Num')):  # Python < 3.8 fallback
             return node.n
         elif isinstance(node, ast.BinOp):
-            left = self._eval(node.left, mode)
-            right = self._eval(node.right, mode)
+            left = self._eval(node.left, mode, variables)
+            right = self._eval(node.right, mode, variables)
             op_type = type(node.op)
             if op_type not in self.operators:
                 raise InvalidExpressionError(f"Unsupported operator: {op_type.__name__}")
@@ -74,13 +102,20 @@ class Evaluator:
             except Exception as e:
                 raise MathOperationError(str(e))
         elif isinstance(node, ast.UnaryOp):
-            operand = self._eval(node.operand, mode)
+            operand = self._eval(node.operand, mode, variables)
             op_type = type(node.op)
             if op_type not in self.operators:
                 raise InvalidExpressionError(f"Unsupported unary operator: {op_type.__name__}")
             return self.operators[op_type](operand)
         elif isinstance(node, ast.Name):
             name = node.id.upper()
+            if variables and node.id in variables:
+                return variables[node.id]
+            if variables and name in variables:
+                return variables[name]
+            if variables and node.id.lower() in variables:
+                return variables[node.id.lower()]
+                
             if name == 'PI':
                 from utils.constants import PI
                 return PI
@@ -94,7 +129,7 @@ class Evaluator:
             func_name = node.func.id.lower()
             
             # Evaluate arguments
-            args = [self._eval(arg, mode) for arg in node.args]
+            args = [self._eval(arg, mode, variables) for arg in node.args]
             if len(args) != 1:
                 raise InvalidExpressionError(f"Function {func_name} expects exactly 1 argument")
             
@@ -106,6 +141,20 @@ class Evaluator:
                     return ScientificFunctions.cos(val, mode)
                 elif func_name == 'tan':
                     return ScientificFunctions.tan(val, mode)
+                elif func_name == 'asin':
+                    return ScientificFunctions.asin(val, mode)
+                elif func_name == 'acos':
+                    return ScientificFunctions.acos(val, mode)
+                elif func_name == 'atan':
+                    return ScientificFunctions.atan(val, mode)
+                elif func_name == 'sinh':
+                    return ScientificFunctions.sinh(val)
+                elif func_name == 'cosh':
+                    return ScientificFunctions.cosh(val)
+                elif func_name == 'tanh':
+                    return ScientificFunctions.tanh(val)
+                elif func_name == 'exp':
+                    return ScientificFunctions.exp(val)
                 elif func_name == 'log':
                     return ScientificFunctions.log(val)
                 elif func_name == 'ln':

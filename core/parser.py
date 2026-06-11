@@ -40,16 +40,16 @@ class Parser:
         # Parenthesis followed by constant or function: e.g., (3)PI -> (3)*PI, (3)sin -> (3)*sin
         expression = re.sub(r'\)\s*([a-zA-Z_])', r')*\1', expression)
         
-        # Constant followed by parenthesis: e.g., PI(3) -> PI*(3)
-        expression = re.sub(r'\b(PI|E)\s*\(', r'\1*(', expression, flags=re.IGNORECASE)
+        # Constant/variable followed by parenthesis: e.g., PI(3) -> PI*(3), x(3) -> x*(3)
+        expression = re.sub(r'\b(PI|E|X)\s*\(', r'\1*(', expression, flags=re.IGNORECASE)
         
-        # Constant followed by constant/function: e.g., PI E -> PI*E, PI sin -> PI*sin
-        expression = re.sub(r'\b(PI|E)\s+(PI|E|sin|cos|tan|log|ln|sqrt|factorial)\b', r'\1*\2', expression, flags=re.IGNORECASE)
+        # Constant/variable followed by constant/variable/function: e.g., PI E -> PI*E, x sin(x) -> x*sin(x)
+        expression = re.sub(r'\b(PI|E|X)\s+(PI|E|X|sin|cos|tan|asin|acos|atan|sinh|cosh|tanh|log|ln|sqrt|factorial|exp)\b', r'\1*\2', expression, flags=re.IGNORECASE)
         
         # 5. Casing normalization (done at the end so word boundaries \b match correctly after operators are inserted)
         expression = re.sub(r'\bpi\b', 'PI', expression, flags=re.IGNORECASE)
         expression = re.sub(r'\be\b', 'E', expression, flags=re.IGNORECASE)
-        for func in ['sin', 'cos', 'tan', 'log', 'ln', 'sqrt', 'factorial']:
+        for func in ['sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'sinh', 'cosh', 'tanh', 'log', 'ln', 'sqrt', 'factorial', 'exp']:
             expression = re.sub(rf'\b{func}\b', func, expression, flags=re.IGNORECASE)
         
         return expression

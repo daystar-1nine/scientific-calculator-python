@@ -49,6 +49,13 @@ class TestParser(unittest.TestCase):
         with self.assertRaises(InvalidExpressionError):
             self.parser.parse("2+3)!")
 
+    def test_implicit_multiplication_with_variable_x(self):
+        self.assertEqual(self.parser.parse("x(3)"), "x*(3)")
+        self.assertEqual(self.parser.parse("x(x+1)"), "x*(x+1)")
+        self.assertEqual(self.parser.parse("x sin(x)"), "x*sin(x)")
+        self.assertEqual(self.parser.parse("2x"), "2*x")
+        self.assertEqual(self.parser.parse("x PI"), "x*PI")
+
 
 if __name__ == "__main__":
     unittest.main()
