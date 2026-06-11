@@ -126,9 +126,10 @@ class TestScientificFunctions(unittest.TestCase):
         # Factorial too large (max 1000)
         with self.assertRaises(MathOperationError):
             self.evaluator.evaluate("factorial(1001)")
-        # Complex result not supported
-        with self.assertRaises(MathOperationError):
-            self.evaluator.evaluate("(-4) ^ 0.5")
+        # Complex result is supported now
+        res_complex = self.evaluator.evaluate("(-4) ^ 0.5")
+        self.assertAlmostEqual(res_complex.real, 0.0)
+        self.assertAlmostEqual(res_complex.imag, 2.0)
 
 
 if __name__ == "__main__":

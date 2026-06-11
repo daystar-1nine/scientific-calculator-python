@@ -43,12 +43,11 @@ class Evaluator:
             # Check size using logarithmic approximation
             if base != 0:
                 import math
-                if exponent * math.log10(abs(base)) > 10000:
+                exp_real = exponent.real if isinstance(exponent, complex) else exponent
+                if exp_real * math.log10(abs(base)) > 10000:
                     raise MathOperationError("Power calculation overflow")
             
             result = operator.pow(base, exponent)
-            if isinstance(result, complex):
-                raise MathOperationError("Complex result not supported")
             return result
         except OverflowError:
             raise MathOperationError("Power calculation overflow")
@@ -84,7 +83,7 @@ class Evaluator:
 
     def _eval(self, node, mode, variables=None):
         if isinstance(node, ast.Constant):  # Python 3.8+
-            if not isinstance(node.value, (int, float)) or isinstance(node.value, bool):
+            if not isinstance(node.value, (int, float, complex)) or isinstance(node.value, bool):
                 raise InvalidExpressionError("Unsupported constant value")
             return node.value
         elif hasattr(ast, 'Num') and isinstance(node, getattr(ast, 'Num')):  # Python < 3.8 fallback

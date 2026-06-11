@@ -336,6 +336,32 @@ class CalculatorApp:
             return "break"
 
     def format_result(self, value):
+        if isinstance(value, complex):
+            real_val = value.real
+            imag_val = value.imag
+            if abs(real_val) < 1e-15:
+                real_val = 0.0
+            if abs(imag_val) < 1e-15:
+                imag_val = 0.0
+
+            if imag_val == 0.0:
+                return self.format_result(real_val)
+            if real_val == 0.0:
+                if imag_val == 1.0:
+                    return "i"
+                if imag_val == -1.0:
+                    return "-i"
+                return f"{self.format_result(imag_val)}i"
+            
+            real_str = self.format_result(real_val)
+            sign = "+" if imag_val > 0 else "-"
+            abs_imag = abs(imag_val)
+            if abs_imag == 1.0:
+                imag_str = "i"
+            else:
+                imag_str = f"{self.format_result(abs_imag)}i"
+            return f"{real_str} {sign} {imag_str}"
+
         if isinstance(value, int) and not isinstance(value, bool):
             if abs(value) > 1e12:
                 s = str(value)

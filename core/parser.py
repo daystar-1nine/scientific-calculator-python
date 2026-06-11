@@ -46,6 +46,10 @@ class Parser:
         # Constant/variable followed by constant/variable/function: e.g., PI E -> PI*E, x sin(x) -> x*sin(x)
         expression = re.sub(r'\b(PI|E|X)\s+(PI|E|X|sin|cos|tan|asin|acos|atan|sinh|cosh|tanh|log|ln|sqrt|factorial|exp)\b', r'\1*\2', expression, flags=re.IGNORECASE)
         
+        # 4.5. Complex numbers imaginary unit 'i'
+        expression = re.sub(r'(\d+(?:\.\d+)?)\s*i\b', r'\1*1j', expression, flags=re.IGNORECASE)
+        expression = re.sub(r'\bi\b', '1j', expression, flags=re.IGNORECASE)
+        
         # 5. Casing normalization (done at the end so word boundaries \b match correctly after operators are inserted)
         expression = re.sub(r'\bpi\b', 'PI', expression, flags=re.IGNORECASE)
         expression = re.sub(r'\be\b', 'E', expression, flags=re.IGNORECASE)
