@@ -21,9 +21,10 @@ class TestFeatures(unittest.TestCase):
 
     def test_history_operations(self):
         test_file = ".test_calculator_history"
+        full_test_path = os.path.join(os.path.expanduser("~"), test_file)
         # Ensure it starts clean
-        if os.path.exists(test_file):
-            os.remove(test_file)
+        if os.path.exists(full_test_path):
+            os.remove(full_test_path)
 
         hist = History(filename=test_file)
         self.assertEqual(hist.get_history(), [])
@@ -42,8 +43,8 @@ class TestFeatures(unittest.TestCase):
         self.assertIsNone(hist.get_last_entry())
 
         # Final cleanup
-        if os.path.exists(test_file):
-            os.remove(test_file)
+        if os.path.exists(full_test_path):
+            os.remove(full_test_path)
 
 
 if __name__ == "__main__":

@@ -29,12 +29,12 @@ def handle_error(error):
     """
 
     if isinstance(error, DivisionByZeroError):
-        return "Error: Division by zero"
+        return f"Error: {str(error)}" if str(error) else "Error: Division by zero"
 
     if isinstance(error, InvalidExpressionError):
-        return "Error: Invalid expression"
+        return f"Error: {str(error)}" if str(error) else "Error: Invalid expression"
 
     if isinstance(error, MathOperationError):
-        return "Error: Invalid mathematical operation"
+        return f"Error: {str(error)}" if str(error) else "Error: Invalid mathematical operation"
 
     return f"Error: {str(error)}"

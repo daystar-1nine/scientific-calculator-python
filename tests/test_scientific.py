@@ -119,6 +119,10 @@ class TestScientificFunctions(unittest.TestCase):
         with self.assertRaises(MathOperationError):
             self.evaluator.evaluate("9 ^ 9 ^ 9")
         
+        # Log value too large with base < 1 and negative exponent (0.1 ^ -20000)
+        with self.assertRaises(MathOperationError):
+            self.evaluator.evaluate("0.1 ^ -20000")
+        
         # Factorial too large (max 1000)
         with self.assertRaises(MathOperationError):
             self.evaluator.evaluate("factorial(1001)")

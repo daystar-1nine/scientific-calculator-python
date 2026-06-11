@@ -43,7 +43,7 @@ class Evaluator:
             # Check size using logarithmic approximation
             if base != 0:
                 import math
-                if abs(exponent) * math.log10(abs(base)) > 10000:
+                if exponent * math.log10(abs(base)) > 10000:
                     raise MathOperationError("Power calculation overflow")
             
             result = operator.pow(base, exponent)
@@ -75,6 +75,8 @@ class Evaluator:
             raise InvalidExpressionError("Syntax error in expression")
         except ZeroDivisionError:
             raise DivisionByZeroError("Division by zero")
+        except RecursionError:
+            raise InvalidExpressionError("Expression too deeply nested")
         except CalculatorError:
             raise
         except Exception as e:

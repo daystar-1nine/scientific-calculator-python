@@ -9,7 +9,8 @@ from utils.constants import MAX_HISTORY_SIZE
 
 class History:
     def __init__(self, filename=".calculator_history"):
-        self.filename = filename
+        # Save history in the user's home directory to guarantee write permissions
+        self.filename = os.path.join(os.path.expanduser("~"), filename)
         self._history = []
         self._load_history()
 

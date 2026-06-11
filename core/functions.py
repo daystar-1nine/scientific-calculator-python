@@ -24,17 +24,10 @@ class ScientificFunctions:
 
     @staticmethod
     def tan(value, mode="RAD"):
-        if mode == "DEG":
-            # Check for 90, 270, etc. where tangent is undefined
-            if (value - 90) % 180 == 0:
-                raise MathOperationError("Tangent undefined for this angle")
-            value = math.radians(value)
-        else:
-            # Check for pi/2, 3pi/2, etc. (with float tolerance)
-            # cos(x) close to 0
-            if abs(math.cos(value)) < 1e-15:
-                raise MathOperationError("Tangent undefined for this angle")
-        return math.tan(value)
+        rad_val = math.radians(value) if mode == "DEG" else value
+        if abs(math.cos(rad_val)) < 1e-15:
+            raise MathOperationError("Tangent undefined for this angle")
+        return math.tan(rad_val)
 
     @staticmethod
     def log(value):

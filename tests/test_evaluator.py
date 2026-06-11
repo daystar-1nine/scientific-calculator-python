@@ -57,6 +57,9 @@ class TestEvaluatorBasic(unittest.TestCase):
             self.evaluator.evaluate("True")
         with self.assertRaises(InvalidExpressionError):
             self.evaluator.evaluate("")
+        # Deeply nested parentheses (exceeding recursion depth)
+        with self.assertRaises(InvalidExpressionError):
+            self.evaluator.evaluate("(" * 1500 + "1" + ")" * 1500)
 
     def test_variable_evaluation(self):
         self.assertEqual(self.evaluator.evaluate("x + 5", variables={"x": 10}), 15)
