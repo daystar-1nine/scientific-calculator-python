@@ -30,7 +30,7 @@ class CalculatorApp:
     def __init__(self):
         self.root = tk.Tk()
         self.root.title("Scientific Calculator")
-        self.root.geometry("480x550")
+        self.root.geometry("760x550")
         self.root.resizable(False, False)
 
         # State Managers
@@ -63,9 +63,10 @@ class CalculatorApp:
         # Sync the mode button text with default
         self.update_mode_button_text()
 
-        # Right side: Sidebar frame (initially hidden)
+        # Right side: Sidebar frame (packed by default on startup to make all premium features visible)
         self.sidebar_frame = tk.Frame(self.main_frame, bg="#2C2C2E", width=280)
-        self.sidebar_visible = False
+        self.sidebar_frame.pack(side="right", fill="both", expand=True)
+        self.sidebar_visible = True
 
         # Tab switch headers (using a premium OptionMenu to support multiple new tools)
         self.sidebar_tabs_frame = tk.Frame(self.sidebar_frame, bg="#2C2C2E")
@@ -206,6 +207,9 @@ class CalculatorApp:
 
         # Bind physical keyboard events
         self.root.bind("<Key>", self.on_key_press)
+
+        # Show default active tab (History) on startup
+        self.switch_sidebar_tab(self.active_tab)
 
     def on_button_click(self, char):
         current_text = self.display.get_text()
