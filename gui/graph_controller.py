@@ -74,7 +74,41 @@ class GraphController:
         self.graph_xmax_entry.pack(side="left", fill="x", expand=True)
         self.graph_xmax_entry.insert(0, "10")
 
-        # 3. Plot button
+        # 3. Zoom Controls Frame
+        graph_zoom_frame = tk.Frame(self.tab_frame, bg="#2C2C2E")
+        graph_zoom_frame.pack(fill="x", padx=10, pady=2)
+
+        zoom_in_btn = tk.Button(
+            graph_zoom_frame,
+            text="Zoom In (+)",
+            bg="#48484A",
+            fg="#FFFFFF",
+            font=("Segoe UI", 9, "bold"),
+            bd=0,
+            relief="flat",
+            activebackground="#636366",
+            activeforeground="#FFFFFF",
+            height=1,
+            command=self.zoom_in
+        )
+        zoom_in_btn.pack(side="left", fill="x", expand=True, padx=(0, 5))
+
+        zoom_out_btn = tk.Button(
+            graph_zoom_frame,
+            text="Zoom Out (-)",
+            bg="#48484A",
+            fg="#FFFFFF",
+            font=("Segoe UI", 9, "bold"),
+            bd=0,
+            relief="flat",
+            activebackground="#636366",
+            activeforeground="#FFFFFF",
+            height=1,
+            command=self.zoom_out
+        )
+        zoom_out_btn.pack(side="right", fill="x", expand=True, padx=(5, 0))
+
+        # 4. Plot button
         plot_btn = tk.Button(
             self.tab_frame,
             text="Plot Function",
@@ -90,7 +124,7 @@ class GraphController:
         )
         plot_btn.pack(fill="x", padx=10, pady=5)
 
-        # 4. Canvas plotting screen
+        # 5. Canvas plotting screen
         self.graph_canvas = tk.Canvas(
             self.tab_frame,
             width=250,
@@ -100,6 +134,13 @@ class GraphController:
             highlightthickness=0
         )
         self.graph_canvas.pack(fill="both", expand=True, padx=10, pady=10)
+
+        # Event bindings for drag-to-pan and scroll-to-zoom
+        self.graph_canvas.bind("<ButtonPress-1>", self.on_drag_start)
+        self.graph_canvas.bind("<B1-Motion>", self.on_drag_move)
+        self.graph_canvas.bind("<MouseWheel>", self.on_mouse_wheel)
+        self.graph_canvas.bind("<Button-4>", lambda e: self.zoom_in())   # Scroll up (Linux)
+        self.graph_canvas.bind("<Button-5>", lambda e: self.zoom_out())  # Scroll down (Linux)
 
     def plot_function(self):
         expr = self.graph_entry.get().strip()
@@ -276,3 +317,71 @@ class GraphController:
             font=("Segoe UI", 8, "bold"),
             anchor="e"
         )
+
+    def on_drag_start(self, event):
+        self.drag_start_x = event.x
+        try:
+            self.drag_xmin = float(self.graph_xmin_entry.get().strip())
+            self.drag_xmax = float(self.graph_xmax_entry.get().strip())
+        except ValueError:
+            pass
+
+    def on_drag_move(self, event):
+        if not hasattr(self, 'drag_start_x') or not hasattr(self, 'drag_xmin'):
+            return
+        dx = event.x - self.drag_start_x
+        W = self.graph_canvas.winfo_width()
+        if W <= 1:
+            W = 250
+        dx_coords = dx * (self.drag_xmax - self.drag_xmin) / W
+
+        new_xmin = self.drag_xmin - dx_coords
+        new_xmax = self.drag_xmax - dx_coords
+
+        self.graph_xmin_entry.delete(0, tk.END)
+        self.graph_xmin_entry.insert(0, f"{new_xmin:.4g}")
+        self.graph_xmax_entry.delete(0, tk.END)
+        self.graph_xmax_entry.insert(0, f"{new_xmax:.4g}")
+        self.plot_function()
+
+    def zoom_in(self):
+        try:
+            xmin = float(self.graph_xmin_entry.get().strip())
+            xmax = float(self.graph_xmax_entry.get().strip())
+            center = (xmin + xmax) / 2
+            half_range = (xmax - xmin) / 2
+            new_half_range = half_range * 0.8
+            new_xmin = center - new_half_range
+            new_xmax = center + new_half_range
+
+            self.graph_xmin_entry.delete(0, tk.END)
+            self.graph_xmin_entry.insert(0, f"{new_xmin:.4g}")
+            self.graph_xmax_entry.delete(0, tk.END)
+            self.graph_xmax_entry.insert(0, f"{new_xmax:.4g}")
+            self.plot_function()
+        except ValueError:
+            pass
+
+    def zoom_out(self):
+        try:
+            xmin = float(self.graph_xmin_entry.get().strip())
+            xmax = float(self.graph_xmax_entry.get().strip())
+            center = (xmin + xmax) / 2
+            half_range = (xmax - xmin) / 2
+            new_half_range = half_range * 1.25
+            new_xmin = center - new_half_range
+            new_xmax = center + new_half_range
+
+            self.graph_xmin_entry.delete(0, tk.END)
+            self.graph_xmin_entry.insert(0, f"{new_xmin:.4g}")
+            self.graph_xmax_entry.delete(0, tk.END)
+            self.graph_xmax_entry.insert(0, f"{new_xmax:.4g}")
+            self.plot_function()
+        except ValueError:
+            pass
+
+    def on_mouse_wheel(self, event):
+        if event.delta > 0:
+            self.zoom_in()
+        elif event.delta < 0:
+            self.zoom_out()

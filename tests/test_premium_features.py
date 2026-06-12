@@ -117,6 +117,68 @@ class TestPremiumFeatures(unittest.TestCase):
         app.root.update()
         app.root.destroy()
 
+    def test_grapher_zoom_in(self):
+        app = CalculatorApp()
+        app.graph_controller.graph_xmin_entry.delete(0, tk.END)
+        app.graph_controller.graph_xmin_entry.insert(0, "-10")
+        app.graph_controller.graph_xmax_entry.delete(0, tk.END)
+        app.graph_controller.graph_xmax_entry.insert(0, "10")
+        
+        # Center is 0, range is 20, zoom in scales range by 0.8 => new range 16 (new bounds -8, 8)
+        app.graph_controller.zoom_in()
+        xmin = float(app.graph_controller.graph_xmin_entry.get().strip())
+        xmax = float(app.graph_controller.graph_xmax_entry.get().strip())
+        self.assertAlmostEqual(xmin, -8.0)
+        self.assertAlmostEqual(xmax, 8.0)
+        
+        app.root.update()
+        app.root.destroy()
+
+    def test_grapher_zoom_out(self):
+        app = CalculatorApp()
+        app.graph_controller.graph_xmin_entry.delete(0, tk.END)
+        app.graph_controller.graph_xmin_entry.insert(0, "-10")
+        app.graph_controller.graph_xmax_entry.delete(0, tk.END)
+        app.graph_controller.graph_xmax_entry.insert(0, "10")
+        
+        # Center is 0, range is 20, zoom out scales range by 1.25 => new range 25 (new bounds -12.5, 12.5)
+        app.graph_controller.zoom_out()
+        xmin = float(app.graph_controller.graph_xmin_entry.get().strip())
+        xmax = float(app.graph_controller.graph_xmax_entry.get().strip())
+        self.assertAlmostEqual(xmin, -12.5)
+        self.assertAlmostEqual(xmax, 12.5)
+        
+        app.root.update()
+        app.root.destroy()
+
+    def test_grapher_drag_pan(self):
+        app = CalculatorApp()
+        app.graph_controller.graph_xmin_entry.delete(0, tk.END)
+        app.graph_controller.graph_xmin_entry.insert(0, "-10")
+        app.graph_controller.graph_xmax_entry.delete(0, tk.END)
+        app.graph_controller.graph_xmax_entry.insert(0, "10")
+        
+        # Mock class/event for drag start
+        class MockEvent:
+            def __init__(self, x):
+                self.x = x
+                
+        # Start drag at x = 100
+        app.graph_controller.on_drag_start(MockEvent(100))
+        
+        # Move drag to x = 150 (dx = 50)
+        # Using W = 250, dx_coords = 50 * (10 - (-10)) / 250 = 4.0
+        # Panning right moves the graph right => domain moves left by 4.0 (bounds -14, 6)
+        app.graph_controller.on_drag_move(MockEvent(150))
+        
+        xmin = float(app.graph_controller.graph_xmin_entry.get().strip())
+        xmax = float(app.graph_controller.graph_xmax_entry.get().strip())
+        self.assertAlmostEqual(xmin, -14.0)
+        self.assertAlmostEqual(xmax, 6.0)
+        
+        app.root.update()
+        app.root.destroy()
+
 
 if __name__ == "__main__":
     unittest.main()

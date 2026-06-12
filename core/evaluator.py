@@ -129,6 +129,64 @@ class Evaluator:
                 raise InvalidExpressionError("Invalid function call")
             func_name = node.func.id.lower()
             
+            if func_name == 'diff':
+                if len(node.args) != 2:
+                    raise InvalidExpressionError("Function diff expects exactly 2 arguments: diff(expression, value)")
+                expr_node = node.args[0]
+                x_val = self._eval(node.args[1], mode, variables)
+                if isinstance(x_val, complex):
+                    if x_val.imag != 0:
+                        raise MathOperationError("Differentiation point must be a real number")
+                    x_val = x_val.real
+                
+                h = 1e-6
+                vars_plus = {**(variables or {}), 'x': x_val + h, 'X': x_val + h}
+                vars_minus = {**(variables or {}), 'x': x_val - h, 'X': x_val - h}
+                
+                try:
+                    f_plus = self._eval(expr_node, mode, vars_plus)
+                    f_minus = self._eval(expr_node, mode, vars_minus)
+                    return (f_plus - f_minus) / (2 * h)
+                except Exception as e:
+                    raise MathOperationError(f"Derivative evaluation error: {str(e)}")
+            
+            elif func_name == 'integrate':
+                if len(node.args) != 3:
+                    raise InvalidExpressionError("Function integrate expects exactly 3 arguments: integrate(expression, start, end)")
+                expr_node = node.args[0]
+                start_val = self._eval(node.args[1], mode, variables)
+                end_val = self._eval(node.args[2], mode, variables)
+                
+                if isinstance(start_val, complex) or isinstance(end_val, complex):
+                    if (isinstance(start_val, complex) and start_val.imag != 0) or (isinstance(end_val, complex) and end_val.imag != 0):
+                        raise MathOperationError("Integration bounds must be real numbers")
+                    start_val = start_val.real if isinstance(start_val, complex) else start_val
+                    end_val = end_val.real if isinstance(end_val, complex) else end_val
+                
+                N = 1000
+                h = (end_val - start_val) / N
+                
+                def f(t):
+                    vars_t = {**(variables or {}), 'x': t, 'X': t}
+                    return self._eval(expr_node, mode, vars_t)
+                
+                try:
+                    total = f(start_val) + f(end_val)
+                    odd_sum = 0.0
+                    for i in range(1, N, 2):
+                        odd_sum += f(start_val + i * h)
+                    even_sum = 0.0
+                    for i in range(2, N - 1, 2):
+                        even_sum += f(start_val + i * h)
+                    
+                    result = (h / 3.0) * (total + 4.0 * odd_sum + 2.0 * even_sum)
+                    if isinstance(result, complex):
+                        if abs(result.imag) < 1e-15:
+                            result = result.real
+                    return result
+                except Exception as e:
+                    raise MathOperationError(f"Integration evaluation error: {str(e)}")
+            
             # Evaluate arguments
             args = [self._eval(arg, mode, variables) for arg in node.args]
             if len(args) != 1:

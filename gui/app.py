@@ -9,6 +9,11 @@ from gui.display import Display
 from gui.buttons import ButtonPanel
 from gui.converter_controller import ConverterController
 from gui.graph_controller import GraphController
+from gui.matrix_controller import MatrixController
+from gui.solver_controller import SolverController
+from gui.stats_controller import StatsController
+from gui.programmer_controller import ProgrammerController
+from gui.variables_controller import VariablesController
 from core.evaluator import Evaluator
 from core.modes import CalculatorMode
 from features.memory import Memory
@@ -58,50 +63,42 @@ class CalculatorApp:
         self.sidebar_frame = tk.Frame(self.main_frame, bg="#2C2C2E", width=280)
         self.sidebar_visible = False
 
-        # Tab switch headers
+        # Tab switch headers (using a premium OptionMenu to support multiple new tools)
         self.sidebar_tabs_frame = tk.Frame(self.sidebar_frame, bg="#2C2C2E")
         self.sidebar_tabs_frame.pack(fill="x", padx=5, pady=5)
 
         self.active_tab = "History"
+        self.tab_selector_var = tk.StringVar(value="History")
+        self.tab_selector = tk.OptionMenu(
+            self.sidebar_tabs_frame,
+            self.tab_selector_var,
+            "History", "Grapher", "Converter", "Matrix", "Solver", "Stats", "Base-N", "Vars/Consts", "Guide",
+            command=self.switch_sidebar_tab
+        )
+        self.tab_selector.config(
+            bg="#FF9500", fg="#FFFFFF", font=("Segoe UI", 10, "bold"),
+            bd=0, relief="flat", highlightthickness=0, activebackground="#FF9500", activeforeground="#FFFFFF"
+        )
+        self.tab_selector["menu"].config(
+            bg="#2C2C2E", fg="#FFFFFF", font=("Segoe UI", 9, "bold"),
+            activebackground="#FF9500", activeforeground="#FFFFFF", bd=0
+        )
+        self.tab_selector.pack(fill="x", padx=5, pady=5)
 
         # Tabs container
         self.sidebar_content_frame = tk.Frame(self.sidebar_frame, bg="#2C2C2E")
         self.sidebar_content_frame.pack(fill="both", expand=True)
 
-        # Create Tab Frames
+        # Create Tab Frames (original + new)
         self.tab_history = tk.Frame(self.sidebar_content_frame, bg="#2C2C2E")
         self.tab_graph = tk.Frame(self.sidebar_content_frame, bg="#2C2C2E")
         self.tab_conv = tk.Frame(self.sidebar_content_frame, bg="#2C2C2E")
+        self.tab_matrix = tk.Frame(self.sidebar_content_frame, bg="#2C2C2E")
+        self.tab_solver = tk.Frame(self.sidebar_content_frame, bg="#2C2C2E")
+        self.tab_stats = tk.Frame(self.sidebar_content_frame, bg="#2C2C2E")
+        self.tab_programmer = tk.Frame(self.sidebar_content_frame, bg="#2C2C2E")
+        self.tab_variables = tk.Frame(self.sidebar_content_frame, bg="#2C2C2E")
         self.tab_guide = tk.Frame(self.sidebar_content_frame, bg="#2C2C2E")
-
-        # Tab buttons
-        self.tab_hist_btn = tk.Button(
-            self.sidebar_tabs_frame, text="History", bg="#FF9500", fg="#FFFFFF",
-            font=("Segoe UI", 9, "bold"), bd=0, relief="flat", padx=10, pady=5,
-            command=lambda: self.switch_sidebar_tab("History")
-        )
-        self.tab_hist_btn.pack(side="left", fill="x", expand=True, padx=2)
-
-        self.tab_graph_btn = tk.Button(
-            self.sidebar_tabs_frame, text="Grapher", bg="#48484A", fg="#FFFFFF",
-            font=("Segoe UI", 9, "bold"), bd=0, relief="flat", padx=10, pady=5,
-            command=lambda: self.switch_sidebar_tab("Grapher")
-        )
-        self.tab_graph_btn.pack(side="left", fill="x", expand=True, padx=2)
-
-        self.tab_conv_btn = tk.Button(
-            self.sidebar_tabs_frame, text="Converter", bg="#48484A", fg="#FFFFFF",
-            font=("Segoe UI", 9, "bold"), bd=0, relief="flat", padx=10, pady=5,
-            command=lambda: self.switch_sidebar_tab("Converter")
-        )
-        self.tab_conv_btn.pack(side="left", fill="x", expand=True, padx=2)
-
-        self.tab_guide_btn = tk.Button(
-            self.sidebar_tabs_frame, text="Guide", bg="#48484A", fg="#FFFFFF",
-            font=("Segoe UI", 9, "bold"), bd=0, relief="flat", padx=10, pady=5,
-            command=lambda: self.switch_sidebar_tab("Guide")
-        )
-        self.tab_guide_btn.pack(side="left", fill="x", expand=True, padx=2)
 
         # --- 1. History Tab Widgets ---
         list_frame = tk.Frame(self.tab_history, bg="#2C2C2E")
@@ -148,6 +145,21 @@ class CalculatorApp:
 
         # --- 3. Converter Tab (Managed by Controller) ---
         self.converter_controller = ConverterController(self, self.tab_conv)
+
+        # --- 4. Matrix Tab (Managed by Controller) ---
+        self.matrix_controller = MatrixController(self, self.tab_matrix)
+
+        # --- 5. Solver Tab (Managed by Controller) ---
+        self.solver_controller = SolverController(self, self.tab_solver)
+
+        # --- 6. Stats Tab (Managed by Controller) ---
+        self.stats_controller = StatsController(self, self.tab_stats)
+
+        # --- 7. Programmer Tab (Managed by Controller) ---
+        self.programmer_controller = ProgrammerController(self, self.tab_programmer)
+
+        # --- 8. Variables Tab (Managed by Controller) ---
+        self.variables_controller = VariablesController(self, self.tab_variables)
 
         # --- 4. Guide Tab Widgets ---
         help_text_frame = tk.Frame(self.tab_guide, bg="#2C2C2E")
@@ -205,7 +217,10 @@ class CalculatorApp:
         elif char == "M+":
             if current_text:
                 try:
-                    res = self.evaluator.evaluate(current_text, self.mode_manager.get_mode())
+                    vars_dict = {}
+                    if hasattr(self, "variables_controller"):
+                        vars_dict = self.variables_controller.get_variables_dict()
+                    res = self.evaluator.evaluate(current_text, self.mode_manager.get_mode(), variables=vars_dict)
                     self.memory.add(res)
                     self.update_memory_indicator()
                 except Exception as e:
@@ -213,22 +228,28 @@ class CalculatorApp:
         elif char == "M-":
             if current_text:
                 try:
-                    res = self.evaluator.evaluate(current_text, self.mode_manager.get_mode())
+                    vars_dict = {}
+                    if hasattr(self, "variables_controller"):
+                        vars_dict = self.variables_controller.get_variables_dict()
+                    res = self.evaluator.evaluate(current_text, self.mode_manager.get_mode(), variables=vars_dict)
                     self.memory.subtract(res)
                     self.update_memory_indicator()
                 except Exception as e:
                     self.display.set_text(handle_error(e))
-
+ 
         # Handle History toggle
         elif char == "HIST":
             self.toggle_history()
-
+ 
         # Handle Equal evaluation
         elif char == "=":
             if not current_text:
                 return
             try:
-                raw_res = self.evaluator.evaluate(current_text, self.mode_manager.get_mode())
+                vars_dict = {}
+                if hasattr(self, "variables_controller"):
+                    vars_dict = self.variables_controller.get_variables_dict()
+                raw_res = self.evaluator.evaluate(current_text, self.mode_manager.get_mode(), variables=vars_dict)
                 formatted_res = self.format_result(raw_res)
                 self.display.set_text(formatted_res)
                 self.history.add_entry(current_text, formatted_res)
@@ -280,34 +301,40 @@ class CalculatorApp:
 
     def switch_sidebar_tab(self, tab_name):
         self.active_tab = tab_name
-
-        # Reset button colors
-        self.tab_hist_btn.config(bg="#48484A")
-        self.tab_graph_btn.config(bg="#48484A")
-        self.tab_conv_btn.config(bg="#48484A")
-        self.tab_guide_btn.config(bg="#48484A")
+        self.tab_selector_var.set(tab_name)
 
         # Unpack all frames
         self.tab_history.pack_forget()
         self.tab_graph.pack_forget()
         self.tab_conv.pack_forget()
+        self.tab_matrix.pack_forget()
+        self.tab_solver.pack_forget()
+        self.tab_stats.pack_forget()
+        self.tab_programmer.pack_forget()
+        self.tab_variables.pack_forget()
         self.tab_guide.pack_forget()
 
-        # Switch and highlight
+        # Switch and perform actions
         if tab_name == "History":
-            self.tab_hist_btn.config(bg="#FF9500")
             self.tab_history.pack(fill="both", expand=True)
             self.update_history_display()
         elif tab_name == "Grapher":
-            self.tab_graph_btn.config(bg="#FF9500")
             self.tab_graph.pack(fill="both", expand=True)
             self.graph_controller.plot_function()
         elif tab_name == "Converter":
-            self.tab_conv_btn.config(bg="#FF9500")
             self.tab_conv.pack(fill="both", expand=True)
             self.converter_controller.run_conversion()
+        elif tab_name == "Matrix":
+            self.tab_matrix.pack(fill="both", expand=True)
+        elif tab_name == "Solver":
+            self.tab_solver.pack(fill="both", expand=True)
+        elif tab_name == "Stats":
+            self.tab_stats.pack(fill="both", expand=True)
+        elif tab_name == "Base-N":
+            self.tab_programmer.pack(fill="both", expand=True)
+        elif tab_name == "Vars/Consts":
+            self.tab_variables.pack(fill="both", expand=True)
         elif tab_name == "Guide":
-            self.tab_guide_btn.config(bg="#FF9500")
             self.tab_guide.pack(fill="both", expand=True)
 
     def update_history_display(self):
