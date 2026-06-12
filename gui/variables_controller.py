@@ -62,14 +62,66 @@ class VariablesController:
         for i in range(3):
             grid_frame.grid_columnconfigure(i, weight=1)
 
-        # 2. Scientific Constants Section Header
+        # 2. Custom Functions Section
+        funcs_header = tk.Label(
+            self.tab_frame, text="Custom Functions (e.g. f(x, y) = x^2 + y^2):",
+            fg="#8E8E93", bg="#2C2C2E", font=("Segoe UI", 9, "bold"), anchor="w"
+        )
+        funcs_header.pack(fill="x", padx=10, pady=(10, 2))
+
+        func_input_frame = tk.Frame(self.tab_frame, bg="#2C2C2E")
+        func_input_frame.pack(fill="x", padx=10, pady=2)
+
+        tk.Label(func_input_frame, text="Define:", fg="#FFFFFF", bg="#2C2C2E", font=("Segoe UI", 8, "bold")).pack(side="left")
+        
+        self.func_name_entry = tk.Entry(
+            func_input_frame, bg="#1C1C1E", fg="#FFFFFF", width=8,
+            font=("Segoe UI", 9, "bold"), bd=2, relief="flat",
+            justify="center", insertbackground="#FFFFFF"
+        )
+        self.func_name_entry.pack(side="left", padx=2)
+        self.func_name_entry.insert(0, "f(x, y)")
+
+        tk.Label(func_input_frame, text="=", fg="#FFFFFF", bg="#2C2C2E", font=("Segoe UI", 9, "bold")).pack(side="left", padx=2)
+
+        self.func_body_entry = tk.Entry(
+            func_input_frame, bg="#1C1C1E", fg="#FFFFFF", width=12,
+            font=("Segoe UI", 9, "bold"), bd=2, relief="flat",
+            insertbackground="#FFFFFF"
+        )
+        self.func_body_entry.pack(side="left", fill="x", expand=True, padx=2)
+        self.func_body_entry.insert(0, "x^2 + y^2")
+
+        save_func_btn = tk.Button(
+            func_input_frame, text="Save", bg="#30D158", fg="#FFFFFF",
+            font=("Segoe UI", 8, "bold"), bd=0, relief="flat", padx=6, pady=2,
+            command=self.save_custom_function
+        )
+        save_func_btn.pack(side="right", padx=(5, 0))
+
+        # Listbox for functions
+        self.funcs_listbox = tk.Listbox(
+            self.tab_frame, bg="#1C1C1E", fg="#FFFFFF",
+            selectbackground="#FF9500", selectforeground="#FFFFFF",
+            font=("Segoe UI", 8, "bold"), height=2, bd=0, highlightthickness=0
+        )
+        self.funcs_listbox.pack(fill="x", padx=10, pady=2)
+
+        delete_func_btn = tk.Button(
+            self.tab_frame, text="Delete Selected Function", bg="#FF3B30", fg="#FFFFFF",
+            font=("Segoe UI", 8, "bold"), bd=0, relief="flat", height=1,
+            command=self.delete_custom_function
+        )
+        delete_func_btn.pack(fill="x", padx=10, pady=(2, 5))
+
+        # 3. Scientific Constants Section Header
         consts_header = tk.Label(
             self.tab_frame, text="Physical Constants:",
             fg="#8E8E93", bg="#2C2C2E", font=("Segoe UI", 9, "bold"), anchor="w"
         )
-        consts_header.pack(fill="x", padx=10, pady=(10, 2))
+        consts_header.pack(fill="x", padx=10, pady=(5, 2))
 
-        # 3. Scrollable Constants list
+        # 4. Scrollable Constants list
         list_container = tk.Frame(self.tab_frame, bg="#2C2C2E")
         list_container.pack(fill="both", expand=True, padx=10, pady=(0, 10))
 
@@ -160,3 +212,48 @@ class VariablesController:
             if var_name != "C":
                 d[var_name.lower()] = val
         return d
+
+    def save_custom_function(self):
+        sig = self.func_name_entry.get().strip()
+        body = self.func_body_entry.get().strip()
+        if not sig or not body:
+            return
+        
+        try:
+            if "(" not in sig or ")" not in sig:
+                raise ValueError("Signature must contain arguments, e.g. f(x)")
+            name_part, args_part = sig.split("(", 1)
+            name = name_part.strip()
+            args_str = args_part.split(")", 1)[0]
+            args = [a.strip() for a in args_str.split(",") if a.strip()]
+            
+            if not name:
+                raise ValueError("Function name cannot be empty")
+            
+            if not hasattr(self.app, "custom_functions"):
+                self.app.custom_functions = {}
+            self.app.custom_functions[name] = {
+                "args": args,
+                "body": body
+            }
+            self.update_funcs_listbox()
+        except Exception as e:
+            # Display warning/error in some way
+            pass
+
+    def delete_custom_function(self):
+        sel = self.funcs_listbox.curselection()
+        if not sel:
+            return
+        item_str = self.funcs_listbox.get(sel[0])
+        name = item_str.split("(", 1)[0].strip()
+        if hasattr(self.app, "custom_functions") and name in self.app.custom_functions:
+            del self.app.custom_functions[name]
+            self.update_funcs_listbox()
+
+    def update_funcs_listbox(self):
+        self.funcs_listbox.delete(0, tk.END)
+        if hasattr(self.app, "custom_functions"):
+            for name, data in self.app.custom_functions.items():
+                args_str = ", ".join(data["args"])
+                self.funcs_listbox.insert(tk.END, f"{name}({args_str}) = {data['body']}")

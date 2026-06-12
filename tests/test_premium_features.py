@@ -92,7 +92,7 @@ class TestPremiumFeatures(unittest.TestCase):
             for item in app.graph_controller.graph_canvas.find_all()
             if app.graph_controller.graph_canvas.type(item) == "text"
         ]
-        self.assertIn("Invalid X Range (xmin < xmax)", canvas_texts)
+        self.assertIn("\u26a0 Invalid X range (xmin must be < xmax)", canvas_texts)
         
         app.root.update()
         app.root.destroy()
@@ -124,12 +124,12 @@ class TestPremiumFeatures(unittest.TestCase):
         app.graph_controller.graph_xmax_entry.delete(0, tk.END)
         app.graph_controller.graph_xmax_entry.insert(0, "10")
         
-        # Center is 0, range is 20, zoom in scales range by 0.8 => new range 16 (new bounds -8, 8)
+        # Center is 0, range is 20, zoom in scales range by 0.7 => new range 14 (new bounds -7, 7)
         app.graph_controller.zoom_in()
         xmin = float(app.graph_controller.graph_xmin_entry.get().strip())
         xmax = float(app.graph_controller.graph_xmax_entry.get().strip())
-        self.assertAlmostEqual(xmin, -8.0)
-        self.assertAlmostEqual(xmax, 8.0)
+        self.assertAlmostEqual(xmin, -7.0)
+        self.assertAlmostEqual(xmax, 7.0)
         
         app.root.update()
         app.root.destroy()
@@ -141,12 +141,12 @@ class TestPremiumFeatures(unittest.TestCase):
         app.graph_controller.graph_xmax_entry.delete(0, tk.END)
         app.graph_controller.graph_xmax_entry.insert(0, "10")
         
-        # Center is 0, range is 20, zoom out scales range by 1.25 => new range 25 (new bounds -12.5, 12.5)
+        # Center is 0, range is 20, zoom out scales range by 1.4 => new range 28 (new bounds -14, 14)
         app.graph_controller.zoom_out()
         xmin = float(app.graph_controller.graph_xmin_entry.get().strip())
         xmax = float(app.graph_controller.graph_xmax_entry.get().strip())
-        self.assertAlmostEqual(xmin, -12.5)
-        self.assertAlmostEqual(xmax, 12.5)
+        self.assertAlmostEqual(xmin, -14.0)
+        self.assertAlmostEqual(xmax, 14.0)
         
         app.root.update()
         app.root.destroy()
@@ -167,14 +167,14 @@ class TestPremiumFeatures(unittest.TestCase):
         app.graph_controller.on_drag_start(MockEvent(100))
         
         # Move drag to x = 150 (dx = 50)
-        # Using W = 250, dx_coords = 50 * (10 - (-10)) / 250 = 4.0
-        # Panning right moves the graph right => domain moves left by 4.0 (bounds -14, 6)
+        # Using W = 300, dx_coords = 50 * (10 - (-10)) / 300 = 3.33
+        # Panning right moves the graph right => domain moves left by 3.33 (bounds -13.33, 6.67)
         app.graph_controller.on_drag_move(MockEvent(150))
         
         xmin = float(app.graph_controller.graph_xmin_entry.get().strip())
         xmax = float(app.graph_controller.graph_xmax_entry.get().strip())
-        self.assertAlmostEqual(xmin, -14.0)
-        self.assertAlmostEqual(xmax, 6.0)
+        self.assertAlmostEqual(xmin, -13.33, places=2)
+        self.assertAlmostEqual(xmax, 6.67, places=2)
         
         app.root.update()
         app.root.destroy()

@@ -65,7 +65,11 @@ class Evaluator:
         if not expression or not isinstance(expression, str):
             raise InvalidExpressionError("Expression must be a non-empty string")
         
-        parsed_expression = self.parser.parse(expression)
+        custom_functions = None
+        if hasattr(self, 'app') and self.app is not None:
+            custom_functions = getattr(self.app, 'custom_functions', None)
+
+        parsed_expression = self.parser.parse(expression, custom_functions)
         
         try:
             node = ast.parse(parsed_expression, mode='eval')

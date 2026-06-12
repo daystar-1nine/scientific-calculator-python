@@ -2,39 +2,58 @@
 Handles calculator-related errors.
 """
 
-
+# ============================
+# BASE EXCEPTION
+# ============================
 class CalculatorError(Exception):
     """Base calculator exception."""
-    pass
+
+    def __init__(self, message="", code=None):
+        super().__init__(message)
+        self.code = code
 
 
+# ============================
+# SPECIFIC ERRORS
+# ============================
 class InvalidExpressionError(CalculatorError):
     """Raised when an expression is invalid."""
-    pass
+    def __init__(self, message="Invalid expression"):
+        super().__init__(message, code="INVALID_EXPR")
 
 
 class DivisionByZeroError(CalculatorError):
     """Raised when division by zero occurs."""
-    pass
+    def __init__(self, message="Division by zero"):
+        super().__init__(message, code="DIV_ZERO")
 
 
 class MathOperationError(CalculatorError):
     """Raised for invalid mathematical operations."""
-    pass
+    def __init__(self, message="Invalid mathematical operation"):
+        super().__init__(message, code="MATH_ERROR")
 
 
-def handle_error(error):
+# ============================
+# ERROR HANDLER
+# ============================
+def handle_error(error, debug=False):
     """
     Converts exceptions into user-friendly messages.
+
+    Args:
+        error: Exception instance
+        debug: If True, returns detailed debug info
     """
 
-    if isinstance(error, DivisionByZeroError):
-        return f"Error: {str(error)}" if str(error) else "Error: Division by zero"
+    # Debug mode (for developers)
+    if debug:
+        return f"[{type(error).__name__}] {str(error)}"
 
-    if isinstance(error, InvalidExpressionError):
-        return f"Error: {str(error)}" if str(error) else "Error: Invalid expression"
+    # User-friendly messages
+    if isinstance(error, CalculatorError):
+        message = str(error) if str(error) else "Unexpected calculator error"
+        return f"Error: {message}"
 
-    if isinstance(error, MathOperationError):
-        return f"Error: {str(error)}" if str(error) else "Error: Invalid mathematical operation"
-
-    return f"Error: {str(error)}"
+    # Fallback for unknown exceptions
+    return "Error: Something went wrong"

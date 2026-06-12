@@ -13,6 +13,7 @@ class SolverController:
 
         self.solver_type = tk.StringVar(value="Root Finder")
         self.sub_type = tk.StringVar(value="2 Variables")  # Used for linear size or polynomial degree
+        self.show_steps = tk.BooleanVar(value=False)
         self.param_entries = {}
 
         self.setup_ui()
@@ -45,7 +46,15 @@ class SolverController:
         self.params_container = tk.Frame(self.tab_frame, bg="#2C2C2E")
         self.params_container.pack(fill="x", padx=10, pady=5)
 
-        # 3. Solve Button
+        # 3. Steps Checkbutton & Solve Button
+        self.steps_cb = tk.Checkbutton(
+            self.tab_frame, text="Show Step-by-Step Explanation", variable=self.show_steps,
+            fg="#FFFFFF", bg="#2C2C2E", selectcolor="#1C1C1E",
+            activebackground="#2C2C2E", activeforeground="#FFFFFF",
+            font=("Segoe UI", 9, "bold")
+        )
+        self.steps_cb.pack(anchor="w", padx=10, pady=2)
+
         solve_btn = tk.Button(
             self.tab_frame, text="Solve Equation", bg="#30D158", fg="#FFFFFF",
             font=("Segoe UI", 10, "bold"), bd=0, relief="flat", height=2,
@@ -248,13 +257,49 @@ class SolverController:
                     a1, b1, c1 = grid[0]
                     a2, b2, c2 = grid[1]
                     D = a1 * b2 - b1 * a2
-                    if abs(D) < 1e-13:
-                        raise MathOperationError("System coefficient matrix is singular (no unique solution)")
-                    Dx = c1 * b2 - b1 * c2
-                    Dy = a1 * c2 - c1 * a2
-                    x = Dx / D
-                    y = Dy / D
-                    self.show_result(f"Solution:\nx = {self.app.format_result(x)}\ny = {self.app.format_result(y)}")
+                    
+                    if self.show_steps.get():
+                        steps_str = (
+                            f"Solving 2x2 system using Cramer's Rule:\n"
+                            f"Equations:\n"
+                            f"  {a1}x + {b1}y = {c1}\n"
+                            f"  {a2}x + {b2}y = {c2}\n\n"
+                            f"Step 1: Calculate Determinant D:\n"
+                            f"  D = a1*b2 - b1*a2\n"
+                            f"  D = ({a1})*({b2}) - ({b1})*({a2})\n"
+                            f"  D = {D}\n\n"
+                        )
+                        if abs(D) < 1e-13:
+                            steps_str += "Since D = 0, the system is singular and has no unique solution."
+                            raise MathOperationError(steps_str)
+                        
+                        Dx = c1 * b2 - b1 * c2
+                        Dy = a1 * c2 - c1 * a2
+                        x = Dx / D
+                        y = Dy / D
+                        
+                        steps_str += (
+                            f"Step 2: Calculate Determinant Dx:\n"
+                            f"  Dx = c1*b2 - b1*c2\n"
+                            f"  Dx = ({c1})*({b2}) - ({b1})*({c2})\n"
+                            f"  Dx = {Dx}\n\n"
+                            f"Step 3: Calculate Determinant Dy:\n"
+                            f"  Dy = a1*c2 - c1*a2\n"
+                            f"  Dy = ({a1})*({c2}) - ({c1})*({a2})\n"
+                            f"  Dy = {Dy}\n\n"
+                            f"Step 4: Solve for variables:\n"
+                            f"  x = Dx / D = {Dx} / {D} = {self.app.format_result(x)}\n"
+                            f"  y = Dy / D = {Dy} / {D} = {self.app.format_result(y)}\n"
+                        )
+                        self.show_result(steps_str)
+                    else:
+                        if abs(D) < 1e-13:
+                            raise MathOperationError("System coefficient matrix is singular (no unique solution)")
+                        Dx = c1 * b2 - b1 * c2
+                        Dy = a1 * c2 - c1 * a2
+                        x = Dx / D
+                        y = Dy / D
+                        self.show_result(f"Solution:\nx = {self.app.format_result(x)}\ny = {self.app.format_result(y)}")
                 else:
                     # 3x3 solver using Cramer's Rule
                     a1, b1, c1, d1 = grid[0]
@@ -268,17 +313,66 @@ class SolverController:
                                 m[0][2]*(m[1][0]*m[2][1] - m[1][1]*m[2][0]))
                     
                     D = det3x3([[a1, b1, c1], [a2, b2, c2], [a3, b3, c3]])
-                    if abs(D) < 1e-13:
-                        raise MathOperationError("System coefficient matrix is singular (no unique solution)")
-                        
-                    Dx = det3x3([[d1, b1, c1], [d2, b2, c2], [d3, b3, c3]])
-                    Dy = det3x3([[a1, d1, c1], [a2, d2, c2], [a3, d3, c3]])
-                    Dz = det3x3([[a1, b1, d1], [a2, b2, d2], [a3, b3, d3]])
                     
-                    x = Dx / D
-                    y = Dy / D
-                    z = Dz / D
-                    self.show_result(f"Solution:\nx = {self.app.format_result(x)}\ny = {self.app.format_result(y)}\nz = {self.app.format_result(z)}")
+                    if self.show_steps.get():
+                        steps_str = (
+                            f"Solving 3x3 system using Cramer's Rule:\n"
+                            f"Equations:\n"
+                            f"  {a1}x + {b1}y + {c1}z = {d1}\n"
+                            f"  {a2}x + {b2}y + {c2}z = {d2}\n"
+                            f"  {a3}x + {b3}y + {c3}z = {d3}\n\n"
+                            f"Step 1: Calculate Main Determinant D:\n"
+                            f"  D = {a1}*(({b2})*({c3}) - ({c2})*({b3}))\n"
+                            f"    - {b1}*(({a2})*({c3}) - ({c2})*({a3}))\n"
+                            f"    + {c1}*(({a2})*({b3}) - ({b2})*({a3}))\n"
+                            f"  D = {D}\n\n"
+                        )
+                        if abs(D) < 1e-13:
+                            steps_str += "Since D = 0, the system is singular and has no unique solution."
+                            raise MathOperationError(steps_str)
+                            
+                        Dx = det3x3([[d1, b1, c1], [d2, b2, c2], [d3, b3, c3]])
+                        Dy = det3x3([[a1, d1, c1], [a2, d2, c2], [a3, d3, c3]])
+                        Dz = det3x3([[a1, b1, d1], [a2, b2, d2], [a3, b3, d3]])
+                        
+                        x = Dx / D
+                        y = Dy / D
+                        z = Dz / D
+                        
+                        steps_str += (
+                            f"Step 2: Calculate Determinant Dx:\n"
+                            f"  Dx = {d1}*(({b2})*({c3}) - ({c2})*({b3}))\n"
+                            f"     - {b1}*(({d2})*({c3}) - ({c2})*({d3}))\n"
+                            f"     + {c1}*(({d2})*({b3}) - ({b2})*({d3}))\n"
+                            f"  Dx = {Dx}\n\n"
+                            f"Step 3: Calculate Determinant Dy:\n"
+                            f"  Dy = {a1}*(({d2})*({c3}) - ({c2})*({d3}))\n"
+                            f"     - {d1}*(({a2})*({c3}) - ({c2})*({a3}))\n"
+                            f"     + {c1}*(({a2})*({d3}) - ({d2})*({a3}))\n"
+                            f"  Dy = {Dy}\n\n"
+                            f"Step 4: Calculate Determinant Dz:\n"
+                            f"  Dz = {a1}*(({b2})*({d3}) - ({d2})*({b3}))\n"
+                            f"     - {b1}*(({a2})*({d3}) - ({d2})*({a3}))\n"
+                            f"     + {d1}*(({a2})*({b3}) - ({b2})*({a3}))\n"
+                            f"  Dz = {Dz}\n\n"
+                            f"Step 5: Solve for variables:\n"
+                            f"  x = Dx / D = {Dx} / {D} = {self.app.format_result(x)}\n"
+                            f"  y = Dy / D = {Dy} / {D} = {self.app.format_result(y)}\n"
+                            f"  z = Dz / D = {Dz} / {D} = {self.app.format_result(z)}\n"
+                        )
+                        self.show_result(steps_str)
+                    else:
+                        if abs(D) < 1e-13:
+                            raise MathOperationError("System coefficient matrix is singular (no unique solution)")
+                            
+                        Dx = det3x3([[d1, b1, c1], [d2, b2, c2], [d3, b3, c3]])
+                        Dy = det3x3([[a1, d1, c1], [a2, d2, c2], [a3, d3, c3]])
+                        Dz = det3x3([[a1, b1, d1], [a2, b2, d2], [a3, b3, d3]])
+                        
+                        x = Dx / D
+                        y = Dy / D
+                        z = Dz / D
+                        self.show_result(f"Solution:\nx = {self.app.format_result(x)}\ny = {self.app.format_result(y)}\nz = {self.app.format_result(z)}")
 
             elif t == "Polynomials":
                 coeffs = self.param_entries["poly"]
@@ -300,7 +394,24 @@ class SolverController:
                     if abs(root1.imag) < 1e-13: root1 = root1.real
                     if abs(root2.imag) < 1e-13: root2 = root2.real
 
-                    self.show_result(f"Roots:\nx1 = {self.app.format_result(root1)}\nx2 = {self.app.format_result(root2)}")
+                    if self.show_steps.get():
+                        steps_str = (
+                            f"Solving quadratic equation: {a}x^2 + {b}x + {c} = 0\n\n"
+                            f"Step 1: Identify coefficients:\n"
+                            f"  a = {a}, b = {b}, c = {c}\n\n"
+                            f"Step 2: Calculate discriminant Δ = b^2 - 4ac:\n"
+                            f"  Δ = ({b})^2 - 4*({a})*({c})\n"
+                            f"  Δ = {disc}\n\n"
+                            f"Step 3: Apply the quadratic formula:\n"
+                            f"  x = (-b ± sqrt(Δ)) / 2a\n"
+                            f"  x = (-({b}) ± sqrt({disc})) / (2*({a}))\n\n"
+                            f"Step 4: Calculate roots:\n"
+                            f"  x1 = {self.app.format_result(root1)}\n"
+                            f"  x2 = {self.app.format_result(root2)}\n"
+                        )
+                        self.show_result(steps_str)
+                    else:
+                        self.show_result(f"Roots:\nx1 = {self.app.format_result(root1)}\nx2 = {self.app.format_result(root2)}")
                 else:
                     d = self.app.evaluator.evaluate(coeffs["d"].get().strip(), mode)
                     # Solve cubic analytically/numerically

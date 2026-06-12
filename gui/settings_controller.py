@@ -86,6 +86,30 @@ class SettingsController:
         theme_menu["menu"].config(bg="#2C2C2E", fg="#FFFFFF", font=("Segoe UI", 9, "bold"))
         theme_menu.pack(side="left", fill="x", expand=True)
 
+        # 1.5 Keypad Layout Frame
+        layout_frame = tk.LabelFrame(
+            self.tab_frame, text="Keypad Layout", fg="#FFFFFF", bg="#2C2C2E",
+            font=("Segoe UI", 9, "bold"), padx=10, pady=10
+        )
+        layout_frame.pack(fill="x", padx=10, pady=10)
+
+        layout_lbl = tk.Label(layout_frame, text="Select Layout:", fg="#D1D1D6", bg="#2C2C2E", font=("Segoe UI", 8, "bold"))
+        layout_lbl.pack(side="left", padx=(0, 10))
+
+        self.current_layout = tk.StringVar(value="Standard Scientific")
+        layout_menu = tk.OptionMenu(
+            layout_frame,
+            self.current_layout,
+            "Standard Scientific", "Basic Focus",
+            command=self.change_layout
+        )
+        layout_menu.config(
+            bg="#48484A", fg="#FFFFFF", font=("Segoe UI", 9, "bold"),
+            bd=0, relief="flat", highlightthickness=0
+        )
+        layout_menu["menu"].config(bg="#2C2C2E", fg="#FFFFFF", font=("Segoe UI", 9, "bold"))
+        layout_menu.pack(side="left", fill="x", expand=True)
+
         # 2. Exporters Frame
         export_frame = tk.LabelFrame(
             self.tab_frame, text="Data Exporters", fg="#FFFFFF", bg="#2C2C2E",
@@ -241,3 +265,10 @@ class SettingsController:
             self.show_status(f"History successfully exported to:\n{filepath}")
         except Exception as e:
             self.show_status(f"Export failed:\n{handle_error(e)}")
+
+    def change_layout(self, layout_name):
+        try:
+            self.app.change_keypad_layout(layout_name)
+            self.show_status(f"Keypad layout successfully changed to {layout_name}.")
+        except Exception as e:
+            self.show_status(f"Layout toggle error:\n{handle_error(e)}")

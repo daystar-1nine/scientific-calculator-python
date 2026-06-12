@@ -73,6 +73,28 @@ class MatrixController:
             command=lambda: self.run_unary_op("trans")
         ).pack(side="left", fill="x", expand=True, padx=2)
 
+        # Row 1b ops (REF, RREF, Rank)
+        r1b_frame = tk.Frame(ops_frame, bg="#2C2C2E")
+        r1b_frame.pack(fill="x", pady=2)
+        
+        tk.Button(
+            r1b_frame, text="REF(A)", bg="#FF9500", fg="#FFFFFF",
+            font=("Segoe UI", 9, "bold"), bd=0, relief="flat", height=1,
+            command=lambda: self.run_unary_op("ref")
+        ).pack(side="left", fill="x", expand=True, padx=2)
+
+        tk.Button(
+            r1b_frame, text="RREF(A)", bg="#FF9500", fg="#FFFFFF",
+            font=("Segoe UI", 9, "bold"), bd=0, relief="flat", height=1,
+            command=lambda: self.run_unary_op("rref")
+        ).pack(side="left", fill="x", expand=True, padx=2)
+
+        tk.Button(
+            r1b_frame, text="Rank(A)", bg="#FF9500", fg="#FFFFFF",
+            font=("Segoe UI", 9, "bold"), bd=0, relief="flat", height=1,
+            command=lambda: self.run_unary_op("rank")
+        ).pack(side="left", fill="x", expand=True, padx=2)
+
         # Row 2 ops
         r2_frame = tk.Frame(ops_frame, bg="#2C2C2E")
         r2_frame.pack(fill="x", pady=2)
@@ -209,6 +231,18 @@ class MatrixController:
             elif op == "inv":
                 res = self.inverse(A)
                 self.show_result(f"Inverse(A) =\n\n{self.format_matrix(res)}")
+            elif op == "ref":
+                A_float = self.to_float_matrix(A)
+                res = self.ref_matrix(A_float)
+                self.show_result(f"REF(A) =\n\n{self.format_matrix(res)}")
+            elif op == "rref":
+                A_float = self.to_float_matrix(A)
+                res = self.rref_matrix(A_float)
+                self.show_result(f"RREF(A) =\n\n{self.format_matrix(res)}")
+            elif op == "rank":
+                A_float = self.to_float_matrix(A)
+                res = self.rank_matrix(A_float)
+                self.show_result(f"Rank(A) =\n\n{res}")
         except Exception as e:
             self.show_result(f"Error:\n{handle_error(e)}")
 
@@ -287,3 +321,81 @@ class MatrixController:
         ]
 
         return [[adj[r][c] / det for c in range(3)] for r in range(3)]
+
+    def to_float_matrix(self, A):
+        return [[float(val.real if isinstance(val, complex) else val) for val in row] for row in A]
+
+    def ref_matrix(self, A):
+        M = [row[:] for row in A]
+        nrows = len(M)
+        ncols = len(M[0])
+        
+        r = 0
+        for c in range(ncols):
+            if r >= nrows:
+                break
+            pivot_row = r
+            for i in range(r + 1, nrows):
+                if abs(M[i][c]) > abs(M[pivot_row][c]):
+                    pivot_row = i
+            
+            if abs(M[pivot_row][c]) < 1e-12:
+                continue
+                
+            M[r], M[pivot_row] = M[pivot_row], M[r]
+            
+            for i in range(r + 1, nrows):
+                factor = M[i][c] / M[r][c]
+                for j in range(c, ncols):
+                    M[i][j] -= factor * M[r][j]
+            r += 1
+            
+        for i in range(nrows):
+            for j in range(ncols):
+                if abs(M[i][j]) < 1e-12:
+                    M[i][j] = 0.0
+        return M
+
+    def rref_matrix(self, A):
+        M = [row[:] for row in A]
+        nrows = len(M)
+        ncols = len(M[0])
+        
+        r = 0
+        for c in range(ncols):
+            if r >= nrows:
+                break
+            pivot_row = r
+            for i in range(r + 1, nrows):
+                if abs(M[i][c]) > abs(M[pivot_row][c]):
+                    pivot_row = i
+            
+            if abs(M[pivot_row][c]) < 1e-12:
+                continue
+                
+            M[r], M[pivot_row] = M[pivot_row], M[r]
+            
+            pivot_val = M[r][c]
+            for j in range(c, ncols):
+                M[r][j] /= pivot_val
+                
+            for i in range(nrows):
+                if i != r:
+                    factor = M[i][c]
+                    for j in range(c, ncols):
+                        M[i][j] -= factor * M[r][j]
+            r += 1
+            
+        for i in range(nrows):
+            for j in range(ncols):
+                if abs(M[i][j]) < 1e-12:
+                    M[i][j] = 0.0
+        return M
+
+    def rank_matrix(self, A):
+        ref = self.ref_matrix(A)
+        rank = 0
+        for row in ref:
+            if any(abs(val) > 1e-12 for val in row):
+                rank += 1
+        return rank

@@ -9,6 +9,8 @@ from gui.display import Display
 from gui.buttons import ButtonPanel
 from gui.converter_controller import ConverterController
 from gui.graph_controller import GraphController
+from gui.graph3d_controller import Graph3DController
+from gui.complex_converter_controller import ComplexConverterController
 from gui.matrix_controller import MatrixController
 from gui.solver_controller import SolverController
 from gui.stats_controller import StatsController
@@ -35,9 +37,11 @@ class CalculatorApp:
 
         # State Managers
         self.evaluator = Evaluator()
+        self.evaluator.app = self
         self.mode_manager = CalculatorMode()
         self.memory = Memory()
         self.history = History()
+        self.custom_functions = {}
 
         # GUI Setup
         self.root.configure(bg="#1C1C1E")
@@ -77,7 +81,7 @@ class CalculatorApp:
         self.tab_selector = tk.OptionMenu(
             self.sidebar_tabs_frame,
             self.tab_selector_var,
-            "History", "Grapher", "Converter", "Matrix", "Solver", "Stats", "Base-N", "Vars/Consts", "Vectors", "Formulas", "Finance", "Settings", "Guide",
+            "History", "Grapher", "3D Grapher", "Converter", "Complex Tool", "Matrix", "Solver", "Stats", "Base-N", "Vars/Consts", "Vectors", "Formulas", "Finance", "Settings", "Guide",
             command=self.switch_sidebar_tab
         )
         self.tab_selector.config(
@@ -97,7 +101,9 @@ class CalculatorApp:
         # Create Tab Frames (original + new)
         self.tab_history = tk.Frame(self.sidebar_content_frame, bg="#2C2C2E")
         self.tab_graph = tk.Frame(self.sidebar_content_frame, bg="#2C2C2E")
+        self.tab_graph3d = tk.Frame(self.sidebar_content_frame, bg="#2C2C2E")
         self.tab_conv = tk.Frame(self.sidebar_content_frame, bg="#2C2C2E")
+        self.tab_complex = tk.Frame(self.sidebar_content_frame, bg="#2C2C2E")
         self.tab_matrix = tk.Frame(self.sidebar_content_frame, bg="#2C2C2E")
         self.tab_solver = tk.Frame(self.sidebar_content_frame, bg="#2C2C2E")
         self.tab_stats = tk.Frame(self.sidebar_content_frame, bg="#2C2C2E")
@@ -152,8 +158,14 @@ class CalculatorApp:
         # --- 2. Grapher Tab (Managed by Controller) ---
         self.graph_controller = GraphController(self, self.tab_graph)
 
+        # --- 2.5 3D Grapher Tab (Managed by Controller) ---
+        self.graph3d_controller = Graph3DController(self, self.tab_graph3d)
+
         # --- 3. Converter Tab (Managed by Controller) ---
         self.converter_controller = ConverterController(self, self.tab_conv)
+
+        # --- 3.5 Complex Tool Tab (Managed by Controller) ---
+        self.complex_converter_controller = ComplexConverterController(self, self.tab_complex)
 
         # --- 4. Matrix Tab (Managed by Controller) ---
         self.matrix_controller = MatrixController(self, self.tab_matrix)
@@ -346,7 +358,9 @@ class CalculatorApp:
         # Unpack all frames
         self.tab_history.pack_forget()
         self.tab_graph.pack_forget()
+        self.tab_graph3d.pack_forget()
         self.tab_conv.pack_forget()
+        self.tab_complex.pack_forget()
         self.tab_matrix.pack_forget()
         self.tab_solver.pack_forget()
         self.tab_stats.pack_forget()
@@ -366,8 +380,14 @@ class CalculatorApp:
             self.tab_graph.pack(fill="both", expand=True)
             # Defer plot so the canvas is fully rendered before drawing
             self.root.after(20, self.graph_controller.plot_function)
+        elif tab_name == "3D Grapher":
+            self.tab_graph3d.pack(fill="both", expand=True)
+            self.root.after(20, self.graph3d_controller.plot_3d)
         elif tab_name == "Converter":
             self.tab_conv.pack(fill="both", expand=True)
+            self.converter_controller.run_conversion()
+        elif tab_name == "Complex Tool":
+            self.tab_complex.pack(fill="both", expand=True)
             self.converter_controller.run_conversion()
         elif tab_name == "Matrix":
             self.tab_matrix.pack(fill="both", expand=True)
@@ -572,6 +592,9 @@ class CalculatorApp:
         self.help_text.insert(tk.END, "⚙️ Settings & Exporters\n", "section")
         self.help_text.insert(tk.END, "• Switch calculator UI color themes: Midnight, Casio Classic, Cyberpunk, and Arctic Frost.\n", "bullet")
         self.help_text.insert(tk.END, "• Save calculation history logs to local .txt or .csv files.\n", "bullet")
+
+    def change_keypad_layout(self, layout_name):
+        self.buttons.set_layout(layout_name)
 
     def run(self):
         self.root.mainloop()

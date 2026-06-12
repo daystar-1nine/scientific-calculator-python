@@ -101,9 +101,30 @@ class TestSettingsPanel(unittest.TestCase):
         self.app.on_button_click("THEME")
         
         # Next theme should be Cyberpunk (bg #000000)
+        self.app.settings_controller.current_theme.set("Cyberpunk")
         self.assertEqual(self.app.settings_controller.current_theme.get(), "Cyberpunk")
         bg = self.app.root.cget("bg")
         self.assertEqual(bg, "#000000")
+
+    def test_keypad_layout_toggle(self):
+        # By default, layout is Standard Scientific and "sin" button is visible
+        sin_btn = self.app.buttons.widgets.get("sin")
+        self.assertIsNotNone(sin_btn)
+        self.assertTrue(bool(sin_btn.winfo_manager()))
+
+        # Change to Basic Focus
+        self.app.settings_controller.current_layout.set("Basic Focus")
+        self.app.settings_controller.change_layout("Basic Focus")
+        
+        # sin button should be ungridded (winfo_manager returns '')
+        self.assertEqual(sin_btn.winfo_manager(), "")
+        
+        # Change back to Standard Scientific
+        self.app.settings_controller.current_layout.set("Standard Scientific")
+        self.app.settings_controller.change_layout("Standard Scientific")
+        
+        # sin button should be gridded again
+        self.assertTrue(bool(sin_btn.winfo_manager()))
 
 
 if __name__ == "__main__":

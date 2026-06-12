@@ -526,8 +526,10 @@ class GraphController:
     def on_mouse_hover(self, event):
         W = self.graph_canvas.winfo_width()
         H = self.graph_canvas.winfo_height()
-        if W <= 1 or H <= 1:
-            return
+        if W <= 1:
+            W = 300
+        if H <= 1:
+            H = 280
 
         px = event.x
         if px < 0 or px > W:
@@ -745,6 +747,6 @@ class GraphController:
 
         try:
             img.save(filepath, "PNG")
-            messagebox.showinfo("Export Successful", f"Graph saved to:\n{filepath}")
+            self.status_var.set(f"Exported: {filepath}")
         except Exception as ex:
             messagebox.showerror("Export Failed", str(ex))

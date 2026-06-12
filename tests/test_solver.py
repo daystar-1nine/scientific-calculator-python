@@ -89,6 +89,51 @@ class TestEquationSolvers(unittest.TestCase):
         self.assertIn("2", res)
         self.assertIn("3", res)
 
+    def test_step_by_step_quadratic(self):
+        self.app.solver_controller.solver_type.set("Polynomials")
+        self.app.solver_controller.on_type_change()
+        self.app.solver_controller.sub_type.set("Quadratic (2nd)")
+        self.app.solver_controller.on_poly_degree_change()
+        self.app.solver_controller.show_steps.set(True)
+
+        poly = self.app.solver_controller.param_entries["poly"]
+        poly["a"].delete(0, tk.END); poly["a"].insert(0, "1")
+        poly["b"].delete(0, tk.END); poly["b"].insert(0, "-5")
+        poly["c"].delete(0, tk.END); poly["c"].insert(0, "6")
+
+        self.app.solver_controller.solve()
+        res = self.app.solver_controller.result_text.get("1.0", tk.END).strip()
+        self.assertIn("Step 1: Identify coefficients", res)
+        self.assertIn("Step 2: Calculate discriminant", res)
+        self.assertIn("Step 3: Apply the quadratic formula", res)
+        self.assertIn("x1 = 3", res)
+        self.assertIn("x2 = 2", res)
+
+    def test_step_by_step_linear_2x2(self):
+        self.app.solver_controller.solver_type.set("Linear Systems")
+        self.app.solver_controller.on_type_change()
+        self.app.solver_controller.sub_type.set("2 Variables")
+        self.app.solver_controller.on_linear_size_change()
+        self.app.solver_controller.show_steps.set(True)
+
+        grid = self.app.solver_controller.param_entries["grid"]
+        # 2x + y = 5
+        # x - y = 1
+        grid[0][0].delete(0, tk.END); grid[0][0].insert(0, "2")
+        grid[0][1].delete(0, tk.END); grid[0][1].insert(0, "1")
+        grid[0][2].delete(0, tk.END); grid[0][2].insert(0, "5")
+        grid[1][0].delete(0, tk.END); grid[1][0].insert(0, "1")
+        grid[1][1].delete(0, tk.END); grid[1][1].insert(0, "-1")
+        grid[1][2].delete(0, tk.END); grid[1][2].insert(0, "1")
+
+        self.app.solver_controller.solve()
+        res = self.app.solver_controller.result_text.get("1.0", tk.END).strip()
+        self.assertIn("Solving 2x2 system using Cramer's Rule", res)
+        self.assertIn("Step 1: Calculate Determinant D", res)
+        self.assertIn("Step 2: Calculate Determinant Dx", res)
+        self.assertIn("= 2", res)
+        self.assertIn("= 1", res)
+
 
 if __name__ == "__main__":
     unittest.main()

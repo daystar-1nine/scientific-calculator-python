@@ -77,6 +77,53 @@ class TestMatrixAlgebra(unittest.TestCase):
         res = self.app.matrix_controller.result_text.get("1.0", tk.END).strip()
         self.assertIn("singular", res.lower())
 
+    def test_matrix_ref_2x2(self):
+        self.app.matrix_controller.matrix_size.set("2x2")
+        self.app.matrix_controller.update_dimensions()
+        
+        # A = [[1, 2], [3, 4]] => REF is upper triangular
+        self.set_val(self.app.matrix_controller.grid_a_entries[0][0], 1)
+        self.set_val(self.app.matrix_controller.grid_a_entries[0][1], 2)
+        self.set_val(self.app.matrix_controller.grid_a_entries[1][0], 3)
+        self.set_val(self.app.matrix_controller.grid_a_entries[1][1], 4)
+        
+        self.app.matrix_controller.run_unary_op("ref")
+        res = self.app.matrix_controller.result_text.get("1.0", tk.END).strip()
+        self.assertIn("REF(A) =", res)
+        self.assertIn(" 0 ", res)
+
+    def test_matrix_rref_3x3(self):
+        self.app.matrix_controller.matrix_size.set("3x3")
+        self.app.matrix_controller.update_dimensions()
+        
+        # Identity or simple invertible matrix RREF should be identity
+        A = [[1, 2, 3], [0, 1, 4], [5, 6, 0]]
+        for i in range(3):
+            for j in range(3):
+                self.set_val(self.app.matrix_controller.grid_a_entries[i][j], A[i][j])
+                
+        self.app.matrix_controller.run_unary_op("rref")
+        res = self.app.matrix_controller.result_text.get("1.0", tk.END).strip()
+        self.assertIn("RREF(A) =", res)
+        self.assertIn("[ 1  0  0 ]", res)
+        self.assertIn("[ 0  1  0 ]", res)
+        self.assertIn("[ 0  0  1 ]", res)
+
+    def test_matrix_rank_3x3(self):
+        self.app.matrix_controller.matrix_size.set("3x3")
+        self.app.matrix_controller.update_dimensions()
+        
+        # Rank of linear dependent matrix: Row 3 = Row 1 + Row 2
+        # [[1, 2, 3], [4, 5, 6], [5, 7, 9]] => rank should be 2
+        A = [[1, 2, 3], [4, 5, 6], [5, 7, 9]]
+        for i in range(3):
+            for j in range(3):
+                self.set_val(self.app.matrix_controller.grid_a_entries[i][j], A[i][j])
+                
+        self.app.matrix_controller.run_unary_op("rank")
+        res = self.app.matrix_controller.result_text.get("1.0", tk.END).strip()
+        self.assertIn("Rank(A) =\n\n2", res)
+
 
 if __name__ == "__main__":
     unittest.main()

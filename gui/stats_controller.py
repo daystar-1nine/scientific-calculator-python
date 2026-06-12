@@ -68,6 +68,12 @@ class StatsController:
         self.result_text.pack(fill="both", expand=True, padx=10, pady=(0, 10))
         self.result_text.config(state="disabled")
 
+        # Visual Chart Canvas (Premium Feature: Histogram / Scatter Plot)
+        self.chart_canvas = tk.Canvas(
+            self.tab_frame, bg="#1C1C1E", height=140, bd=0, highlightthickness=0
+        )
+        self.chart_canvas.pack(fill="both", expand=True, padx=10, pady=(0, 10))
+
         self.on_type_change()
 
     def on_type_change(self, *args):
@@ -75,6 +81,9 @@ class StatsController:
         for w in self.params_container.winfo_children():
             w.destroy()
         self.param_entries = {}
+
+        if hasattr(self, "chart_canvas"):
+            self.chart_canvas.delete("all")
 
         t = self.stats_type.get()
         if t == "Descriptive Stats":
@@ -235,6 +244,7 @@ class StatsController:
                     f"Std Dev (s):  {self.app.format_result(std_dev)}"
                 )
                 self.show_result(res_str)
+                self.draw_histogram(vals, min_val, max_val)
 
             elif t == "Linear Regression":
                 x_str = self.param_entries["x_vals"].get().strip()
@@ -284,6 +294,7 @@ class StatsController:
                     f"Correlation r:  {self.app.format_result(r)}"
                 )
                 self.show_result(res_str)
+                self.draw_scatter(x_vals, y_vals, slope, intercept)
 
             elif t == "Probability Helpers":
                 op = self.prob_op.get()
@@ -313,3 +324,144 @@ class StatsController:
                     self.show_result(f"Normal CDF ({z}) =\n\n{self.app.format_result(res)}")
         except Exception as e:
             self.show_result(f"Error:\n{handle_error(e)}")
+
+    # -------------------------------------------------------------------------
+    # Visual Chart Drawing Helpers
+    # -------------------------------------------------------------------------
+    def draw_histogram(self, vals, min_val, max_val):
+        self.chart_canvas.delete("all")
+        W = self.chart_canvas.winfo_width()
+        H = self.chart_canvas.winfo_height()
+        if W <= 1: W = 260
+        if H <= 1: H = 140
+
+        # Title
+        self.chart_canvas.create_text(
+            W // 2, 12, text="Value Distribution Histogram", fill="#8E8E93",
+            font=("Segoe UI", 9, "bold")
+        )
+
+        n = len(vals)
+        if n == 0:
+            return
+
+        # Divide into 5 bins
+        num_bins = 5
+        if max_val == min_val:
+            bins = [n]
+            bin_edges = [min_val, min_val + 1.0]
+        else:
+            bin_width = (max_val - min_val) / num_bins
+            bins = [0] * num_bins
+            bin_edges = [min_val + i * bin_width for i in range(num_bins + 1)]
+            for v in vals:
+                idx = int((v - min_val) / bin_width)
+                if idx >= num_bins:
+                    idx = num_bins - 1
+                bins[idx] += 1
+
+        max_count = max(bins) if bins else 1
+
+        # Layout boundaries
+        x0, y0 = 35, 25
+        x1, y1 = W - 15, H - 25
+
+        # Draw axis lines
+        self.chart_canvas.create_line(x0, y0, x0, y1, fill="#555558", width=1)
+        self.chart_canvas.create_line(x0, y1, x1, y1, fill="#555558", width=1)
+
+        # Draw bars
+        num_bars = len(bins)
+        bar_w = (x1 - x0) / num_bars
+        for i in range(num_bars):
+            count = bins[i]
+            bar_h = (y1 - y0) * (count / max_count)
+            bx0 = x0 + i * bar_w + 3
+            bx1 = x0 + (i + 1) * bar_w - 3
+            by0 = y1 - bar_h
+            by1 = y1
+
+            if count > 0:
+                self.chart_canvas.create_rectangle(
+                    bx0, by0, bx1, by1, fill="#30D158", outline="#FFFFFF", width=1
+                )
+                # Count text on top of bar
+                self.chart_canvas.create_text(
+                    (bx0 + bx1) // 2, max(y0, by0 - 8), text=str(count), fill="#D1D1D6",
+                    font=("Segoe UI", 7, "bold")
+                )
+
+            # Bin labels
+            lbl = f"{bin_edges[i]:.2g}"
+            self.chart_canvas.create_text(
+                bx0 + 2, y1 + 10, text=lbl, fill="#8E8E93",
+                font=("Consolas", 7), anchor="nw"
+            )
+
+        # Last label edge
+        self.chart_canvas.create_text(
+            x1 - 10, y1 + 10, text=f"{bin_edges[-1]:.2g}", fill="#8E8E93",
+            font=("Consolas", 7), anchor="n"
+        )
+
+    def draw_scatter(self, x_vals, y_vals, slope, intercept):
+        self.chart_canvas.delete("all")
+        W = self.chart_canvas.winfo_width()
+        H = self.chart_canvas.winfo_height()
+        if W <= 1: W = 260
+        if H <= 1: H = 140
+
+        # Title
+        self.chart_canvas.create_text(
+            W // 2, 12, text="Regression Scatter Plot", fill="#8E8E93",
+            font=("Segoe UI", 9, "bold")
+        )
+
+        xmin, xmax = min(x_vals), max(x_vals)
+        ymin, ymax = min(y_vals), max(y_vals)
+
+        # Pad bounds to prevent division by zero / edge overlap
+        x_margin = (xmax - xmin) * 0.15 or 1.0
+        y_margin = (ymax - ymin) * 0.15 or 1.0
+        xmin, xmax = xmin - x_margin, xmax + x_margin
+        ymin, ymax = ymin - y_margin, ymax + y_margin
+
+        # Layout boundaries
+        x0, y0 = 35, 25
+        x1, y1 = W - 15, H - 25
+
+        def to_px(x):
+            return x0 + (x - xmin) / (xmax - xmin) * (x1 - x0)
+        def to_py(y):
+            return y1 - (y - ymin) / (ymax - ymin) * (y1 - y0)
+
+        # Draw axis lines
+        self.chart_canvas.create_line(x0, y0, x0, y1, fill="#555558", width=1)
+        self.chart_canvas.create_line(x0, y1, x1, y1, fill="#555558", width=1)
+
+        # Ticks & Labels
+        # X label min/max
+        self.chart_canvas.create_text(x0, y1 + 10, text=f"{xmin:.2g}", fill="#8E8E93", font=("Consolas", 7), anchor="n")
+        self.chart_canvas.create_text(x1, y1 + 10, text=f"{xmax:.2g}", fill="#8E8E93", font=("Consolas", 7), anchor="n")
+        # Y label min/max
+        self.chart_canvas.create_text(x0 - 5, y1, text=f"{ymin:.2g}", fill="#8E8E93", font=("Consolas", 7), anchor="e")
+        self.chart_canvas.create_text(x0 - 5, y0, text=f"{ymax:.2g}", fill="#8E8E93", font=("Consolas", 7), anchor="e")
+
+        # Plot regression line
+        px_start, py_start = to_px(xmin), to_py(slope * xmin + intercept)
+        px_end, py_end = to_px(xmax), to_py(slope * xmax + intercept)
+        # Clip Y values to grid boundary
+        py_start_clip = max(y0, min(y1, py_start))
+        py_end_clip = max(y0, min(y1, py_end))
+
+        self.chart_canvas.create_line(
+            px_start, py_start_clip, px_end, py_end_clip, fill="#FF9500", width=2
+        )
+
+        # Plot data points
+        for i in range(len(x_vals)):
+            px = to_px(x_vals[i])
+            py = to_py(y_vals[i])
+            self.chart_canvas.create_oval(
+                px - 4, py - 4, px + 4, py + 4, fill="#30D158", outline="#FFFFFF", width=1
+            )

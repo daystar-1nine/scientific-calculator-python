@@ -37,6 +37,40 @@ class TestVariablesRegistry(unittest.TestCase):
         self.app.variables_controller.insert_constant("h")
         self.assertEqual(self.app.display.get_text(), "h")
 
+    def test_custom_saved_function(self):
+        # Define custom function f(x, y) = x^2 + y^2
+        self.app.variables_controller.func_name_entry.delete(0, tk.END)
+        self.app.variables_controller.func_name_entry.insert(0, "f(x, y)")
+        self.app.variables_controller.func_body_entry.delete(0, tk.END)
+        self.app.variables_controller.func_body_entry.insert(0, "x^2 + y^2")
+        self.app.variables_controller.save_custom_function()
+
+        # Evaluate "f(3, 4)" in main calculator => 3^2 + 4^2 = 25
+        self.app.display.set_text("f(3, 4)")
+        self.app.on_button_click("=")
+        res = self.app.display.get_text()
+        self.assertEqual(res, "25")
+
+    def test_custom_saved_function_nested(self):
+        # Define f(x) = x + 1, g(x) = x^2
+        self.app.variables_controller.func_name_entry.delete(0, tk.END)
+        self.app.variables_controller.func_name_entry.insert(0, "f(x)")
+        self.app.variables_controller.func_body_entry.delete(0, tk.END)
+        self.app.variables_controller.func_body_entry.insert(0, "x + 1")
+        self.app.variables_controller.save_custom_function()
+
+        self.app.variables_controller.func_name_entry.delete(0, tk.END)
+        self.app.variables_controller.func_name_entry.insert(0, "g(x)")
+        self.app.variables_controller.func_body_entry.delete(0, tk.END)
+        self.app.variables_controller.func_body_entry.insert(0, "x^2")
+        self.app.variables_controller.save_custom_function()
+
+        # Evaluate "g(f(2))" => (2+1)^2 = 9
+        self.app.display.set_text("g(f(2))")
+        self.app.on_button_click("=")
+        res = self.app.display.get_text()
+        self.assertEqual(res, "9")
+
 
 if __name__ == "__main__":
     unittest.main()
