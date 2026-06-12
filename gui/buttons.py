@@ -81,12 +81,13 @@ class ButtonPanel:
             {"text": "(", "row": 5, "col": 5, "category": "scientific"},
             {"text": ")", "row": 5, "col": 6, "category": "scientific"},
             
-            # Row 6: Powers, Reciprocals, History
+            # Row 6: Powers, Reciprocals, Theme, History
             {"text": "x^2", "row": 6, "col": 0, "category": "scientific"},
             {"text": "x^3", "row": 6, "col": 1, "category": "scientific"},
             {"text": "1/x", "row": 6, "col": 2, "category": "scientific"},
             {"text": "e^x", "row": 6, "col": 3, "category": "scientific"},
-            {"text": "HIST", "row": 6, "col": 4, "category": "action_history", "columnspan": 3},
+            {"text": "THEME", "row": 6, "col": 4, "category": "scientific"},
+            {"text": "HIST", "row": 6, "col": 5, "category": "action_history", "columnspan": 2},
         ]
 
     def create_buttons(self, click_callback):

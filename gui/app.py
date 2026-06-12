@@ -261,6 +261,10 @@ class CalculatorApp:
         elif char == "HIST":
             self.toggle_history()
  
+        # Handle Theme Cycle
+        elif char == "THEME":
+            self.cycle_theme()
+ 
         # Handle Equal evaluation
         elif char == "=":
             if not current_text:
@@ -318,6 +322,18 @@ class CalculatorApp:
             self.sidebar_frame.pack(side="right", fill="both", expand=True)
             self.switch_sidebar_tab(self.active_tab)
             self.sidebar_visible = True
+
+    def cycle_theme(self):
+        if hasattr(self, "settings_controller"):
+            themes = list(self.settings_controller.themes.keys())
+            current = self.settings_controller.current_theme.get()
+            try:
+                next_idx = (themes.index(current) + 1) % len(themes)
+            except ValueError:
+                next_idx = 0
+            next_theme = themes[next_idx]
+            self.settings_controller.current_theme.set(next_theme)
+            self.settings_controller.change_theme(next_theme)
 
     def switch_sidebar_tab(self, tab_name):
         self.active_tab = tab_name

@@ -85,6 +85,26 @@ class TestSettingsPanel(unittest.TestCase):
         if os.path.exists(temp_csv):
             os.remove(temp_csv)
 
+    def test_theme_cycling(self):
+        # Default theme is Midnight (bg #1C1C1E)
+        self.assertEqual(self.app.settings_controller.current_theme.get(), "Midnight")
+        
+        # Click THEME button
+        self.app.on_button_click("THEME")
+        
+        # Next theme should be Casio Classic (bg #E5E5EA)
+        self.assertEqual(self.app.settings_controller.current_theme.get(), "Casio Classic")
+        bg = self.app.root.cget("bg")
+        self.assertEqual(bg, "#E5E5EA")
+
+        # Click THEME button again
+        self.app.on_button_click("THEME")
+        
+        # Next theme should be Cyberpunk (bg #000000)
+        self.assertEqual(self.app.settings_controller.current_theme.get(), "Cyberpunk")
+        bg = self.app.root.cget("bg")
+        self.assertEqual(bg, "#000000")
+
 
 if __name__ == "__main__":
     unittest.main()
