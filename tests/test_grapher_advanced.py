@@ -3,6 +3,7 @@ import tkinter as tk
 import os
 from unittest.mock import patch
 from gui.app import CalculatorApp
+from gui.graph_controller import PIL_AVAILABLE
 
 
 class TestGrapherAdvanced(unittest.TestCase):
@@ -50,6 +51,7 @@ class TestGrapherAdvanced(unittest.TestCase):
         crosshairs = self.app.graph_controller.graph_canvas.find_withtag("crosshair")
         self.assertEqual(len(crosshairs), 0)
 
+    @unittest.skipIf(not PIL_AVAILABLE, "Pillow (PIL) is required for PNG export tests")
     @patch('tkinter.filedialog.asksaveasfilename')
     def test_export_png_image(self, mock_save_dialog):
         temp_png = "temp_test_graph.png"

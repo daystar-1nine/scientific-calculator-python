@@ -5,7 +5,12 @@ Controller for the 2D Function Grapher tab with multi-function support, hover tr
 import math
 import tkinter as tk
 from tkinter import filedialog
-from PIL import Image, ImageDraw
+
+try:
+    from PIL import Image, ImageDraw
+    PIL_AVAILABLE = True
+except ImportError:
+    PIL_AVAILABLE = False
 
 class GraphController:
     def __init__(self, app, tab_frame):
@@ -489,6 +494,16 @@ class GraphController:
 
     # --- PNG Export ---
     def export_png(self):
+        if not PIL_AVAILABLE:
+            from tkinter import messagebox
+            messagebox.showerror(
+                "Feature Unavailable",
+                "The Pillow library (PIL) is not installed in the active virtual environment.\n\n"
+                "Please run:\n"
+                "pip install pillow\n\n"
+                "to enable the PNG export feature."
+            )
+            return
         filepath = filedialog.asksaveasfilename(
             defaultextension=".png",
             filetypes=[("PNG Image", "*.png")],
