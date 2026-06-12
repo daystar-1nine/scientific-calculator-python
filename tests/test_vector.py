@@ -59,6 +59,17 @@ class TestVectorMath(unittest.TestCase):
         res = self.app.vector_controller.result_text.get("1.0", tk.END).strip()
         self.assertIn("[ 0, 0, 1 ]", res)
 
+        # 2D cross product: A = [2, 3], B = [4, 5] => A x B should be [ 0, 0, -2 ]
+        self.app.vector_controller.vector_dim.set("2D Vector")
+        self.app.vector_controller.update_dimension()
+        self.set_val(self.app.vector_controller.entries_a["x"], 2)
+        self.set_val(self.app.vector_controller.entries_a["y"], 3)
+        self.set_val(self.app.vector_controller.entries_b["x"], 4)
+        self.set_val(self.app.vector_controller.entries_b["y"], 5)
+        self.app.vector_controller.run_cross()
+        res_2d = self.app.vector_controller.result_text.get("1.0", tk.END).strip()
+        self.assertIn("[ 0, 0, -2 ]", res_2d)
+
     def test_vector_angle_degree(self):
         self.app.vector_controller.vector_dim.set("2D Vector")
         self.app.vector_controller.update_dimension()

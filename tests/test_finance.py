@@ -37,12 +37,30 @@ class TestFinanceModule(unittest.TestCase):
         self.set_val(self.app.finance_controller.entries["I"], 12)
         self.set_val(self.app.finance_controller.entries["N"], 12)
         self.set_val(self.app.finance_controller.entries["FV"], 0)
-
         self.app.finance_controller.solve_tvm("PMT")
 
         pmt_str = self.app.finance_controller.entries["PMT"].get()
         pmt_val = float(pmt_str)
         self.assertAlmostEqual(pmt_val, 1614.36, places=1)
+
+    def test_tvm_solve_periods_and_interest(self):
+        # Solve N: PV = -1000, I/Y = 10%, PMT = 0, FV = 1610.51 => N should be 5
+        self.set_val(self.app.finance_controller.entries["PV"], -1000)
+        self.set_val(self.app.finance_controller.entries["I"], 10)
+        self.set_val(self.app.finance_controller.entries["PMT"], 0)
+        self.set_val(self.app.finance_controller.entries["FV"], 1610.51)
+        self.app.finance_controller.solve_tvm("N")
+        n_val = float(self.app.finance_controller.entries["N"].get())
+        self.assertAlmostEqual(n_val, 5.0, places=1)
+
+        # Solve I: PV = -1000, N = 5, PMT = 0, FV = 1610.51 => I/Y should be 10%
+        self.set_val(self.app.finance_controller.entries["PV"], -1000)
+        self.set_val(self.app.finance_controller.entries["N"], 5)
+        self.set_val(self.app.finance_controller.entries["PMT"], 0)
+        self.set_val(self.app.finance_controller.entries["FV"], 1610.51)
+        self.app.finance_controller.solve_tvm("I")
+        i_val = float(self.app.finance_controller.entries["I"].get())
+        self.assertAlmostEqual(i_val, 10.0, places=1)
 
     def test_generate_amortization_schedule(self):
         # PV = 10000, I/Y = 12%, N = 12 (months)
@@ -57,6 +75,12 @@ class TestFinanceModule(unittest.TestCase):
         self.assertIn("Monthly PMT", res)
         self.assertIn("Interest", res)
         self.assertIn("Principal", res)
+
+        # Verify negative PV works by taking its absolute value
+        self.set_val(self.app.finance_controller.entries["PV"], -10000)
+        self.app.finance_controller.generate_amort()
+        res_neg = self.app.finance_controller.result_text.get("1.0", tk.END).strip()
+        self.assertIn("Loan Amount:  $10,000.00", res_neg)
 
 
 if __name__ == "__main__":

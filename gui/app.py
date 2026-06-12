@@ -512,7 +512,45 @@ class CalculatorApp:
         
         self.help_text.insert(tk.END, "🔄 Unit Converter\n", "section")
         self.help_text.insert(tk.END, "• Select Category (Length, Area, Volume, Speed, Data, Temperature, Mass) and desired units.\n", "bullet")
-        self.help_text.insert(tk.END, "• Enter a value for instant, real-time conversion results.\n", "bullet")
+        self.help_text.insert(tk.END, "• Enter a value for instant, real-time conversion results.\n\n", "bullet")
+
+        self.help_text.insert(tk.END, "🧮 Matrix Algebra\n", "section")
+        self.help_text.insert(tk.END, "• Choose 2x2 or 3x3 dimension, input cell expressions, and compute Determinants, Inverses, and Transpositions.\n", "bullet")
+        self.help_text.insert(tk.END, "• Perform binary matrix operations (Addition, Subtraction, Multiplication) between Matrix A and B.\n\n", "bullet")
+
+        self.help_text.insert(tk.END, "⚡ Equation Solvers\n", "section")
+        self.help_text.insert(tk.END, "• Root Finder: input f(x)=0 expression to solve for x using Newton's method.\n", "bullet")
+        self.help_text.insert(tk.END, "• Linear Systems: solve 2x2 or 3x3 linear equation systems using Cramer's Rule.\n", "bullet")
+        self.help_text.insert(tk.END, "• Polynomial Roots: compute all real & complex roots for quadratic and cubic equations.\n\n", "bullet")
+
+        self.help_text.insert(tk.END, "📊 Statistics & Probability\n", "section")
+        self.help_text.insert(tk.END, "• Statistics: calculate Mean, Median, Variance, Std Dev on comma-separated datasets.\n", "bullet")
+        self.help_text.insert(tk.END, "• Regression: fits (x, y) coordinates to find slope, intercept, and correlation coefficient r.\n", "bullet")
+        self.help_text.insert(tk.END, "• Probability: compute combinations (nCr), permutations (nPr), and Normal CDF values.\n\n", "bullet")
+
+        self.help_text.insert(tk.END, "💻 Programmer Mode (Base-N)\n", "section")
+        self.help_text.insert(tk.END, "• Enter values in Hexadecimal, Decimal, Octal, or Binary to instantly sync across all bases.\n", "bullet")
+        self.help_text.insert(tk.END, "• Apply bit-width boundaries (8, 16, 32, 64-bit) and perform logical bitwise operations (AND, OR, XOR, NOT, LSH, RSH).\n\n", "bullet")
+
+        self.help_text.insert(tk.END, "🏷️ Variables & constants\n", "section")
+        self.help_text.insert(tk.END, "• Store numeric values into variable registers (A, B, C, D, X, Y).\n", "bullet")
+        self.help_text.insert(tk.END, "• Quick-insert fundamental constants (speed of light c, Planck constant h, Boltzmann constant k, etc.) directly into calculations.\n\n", "bullet")
+
+        self.help_text.insert(tk.END, "📐 Vector Mathematics\n", "section")
+        self.help_text.insert(tk.END, "• Input 2D or 3D vector coordinates for vector A and vector B.\n", "bullet")
+        self.help_text.insert(tk.END, "• Compute magnitudes, dot product, cross product, angles, addition/subtraction, and projections.\n\n", "bullet")
+
+        self.help_text.insert(tk.END, "📝 Formula Library & Solver\n", "section")
+        self.help_text.insert(tk.END, "• Choose a preloaded relation (Ohm's Law, Gas Law, Kinetic Energy, etc.) or input a custom formula.\n", "bullet")
+        self.help_text.insert(tk.END, "• Select the target variable; enter values for other variables to solve numerically.\n\n", "bullet")
+
+        self.help_text.insert(tk.END, "💰 Financial TVM & Amortization\n", "section")
+        self.help_text.insert(tk.END, "• TVM: Input Periods (N), Interest (I/Y), PV, PMT, FV and solve for any missing variable.\n", "bullet")
+        self.help_text.insert(tk.END, "• Amortization: Input loan amount (PV), rate (I/Y), and term (N) to generate full monthly payment breakdown.\n\n", "bullet")
+
+        self.help_text.insert(tk.END, "⚙️ Settings & Exporters\n", "section")
+        self.help_text.insert(tk.END, "• Switch calculator UI color themes: Midnight, Casio Classic, Cyberpunk, and Arctic Frost.\n", "bullet")
+        self.help_text.insert(tk.END, "• Save calculation history logs to local .txt or .csv files.\n", "bullet")
 
     def run(self):
         self.root.mainloop()

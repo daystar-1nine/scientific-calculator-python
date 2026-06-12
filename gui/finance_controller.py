@@ -186,14 +186,12 @@ class FinanceController:
 
                 # Binary search for N
                 low, high = 0.0, 1000.0
-                success = False
                 for _ in range(100):
                     mid = (low + high) / 2.0
                     f_mid = tvm_eq(mid)
                     f_low = tvm_eq(low)
                     
                     if abs(f_mid) < 1e-10:
-                        success = True
                         low = mid
                         break
                     
@@ -202,10 +200,13 @@ class FinanceController:
                     else:
                         high = mid
                 
-                res = low
-                self.entries["N"].delete(0, tk.END)
-                self.entries["N"].insert(0, f"{res:.6g}")
-                self.show_result(f"Solved N:\nN = {self.app.format_result(res)}")
+                if abs(tvm_eq(low)) < 1e-8:
+                    res = low
+                    self.entries["N"].delete(0, tk.END)
+                    self.entries["N"].insert(0, f"{res:.6g}")
+                    self.show_result(f"Solved N:\nN = {self.app.format_result(res)}")
+                else:
+                    self.show_result("Error:\nFailed to converge to a solution for N.\nPlease check your inputs.")
 
             elif solve_var == "I":
                 # Solve interest rate r numerically
@@ -218,14 +219,12 @@ class FinanceController:
 
                 # Binary search for interest rate r in [-0.99, 10.0]
                 low, high = -0.99, 10.0
-                success = False
                 for _ in range(100):
                     mid = (low + high) / 2.0
                     f_mid = tvm_eq(mid)
                     f_low = tvm_eq(low)
                     
                     if abs(f_mid) < 1e-10:
-                        success = True
                         low = mid
                         break
                     
@@ -234,10 +233,13 @@ class FinanceController:
                     else:
                         high = mid
                         
-                res = low * 100.0
-                self.entries["I"].delete(0, tk.END)
-                self.entries["I"].insert(0, f"{res:.6g}")
-                self.show_result(f"Solved Interest Rate:\nI/Y = {self.app.format_result(res)}%")
+                if abs(tvm_eq(low)) < 1e-8:
+                    res = low * 100.0
+                    self.entries["I"].delete(0, tk.END)
+                    self.entries["I"].insert(0, f"{res:.6g}")
+                    self.show_result(f"Solved Interest Rate:\nI/Y = {self.app.format_result(res)}%")
+                else:
+                    self.show_result("Error:\nFailed to converge to a solution for I/Y.\nPlease check your inputs.")
 
         except Exception as e:
             self.show_result(f"Error:\n{handle_error(e)}")
@@ -246,7 +248,7 @@ class FinanceController:
     def generate_amort(self):
         try:
             vals = self.get_values()
-            PV = vals["PV"]
+            PV = abs(vals["PV"])
             I = vals["I"]
             N = int(vals["N"])
 

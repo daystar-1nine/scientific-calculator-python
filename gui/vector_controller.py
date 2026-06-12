@@ -195,7 +195,9 @@ class VectorController:
                 A[2]*B[0] - A[0]*B[2],
                 A[0]*B[1] - A[1]*B[0]
             ]
-            self.show_result(f"A x B = {self.format_vector(cross)}")
+            # Always format cross product as 3D vector to show the perpendicular z-component
+            content = ", ".join(self.app.format_result(x) for x in cross)
+            self.show_result(f"A x B = [ {content} ]")
         except Exception as e:
             self.show_result(f"Error:\n{handle_error(e)}")
 
