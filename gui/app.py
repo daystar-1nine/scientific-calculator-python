@@ -72,6 +72,7 @@ class CalculatorApp:
         self.tab_history = tk.Frame(self.sidebar_content_frame, bg="#2C2C2E")
         self.tab_graph = tk.Frame(self.sidebar_content_frame, bg="#2C2C2E")
         self.tab_conv = tk.Frame(self.sidebar_content_frame, bg="#2C2C2E")
+        self.tab_guide = tk.Frame(self.sidebar_content_frame, bg="#2C2C2E")
 
         # Tab buttons
         self.tab_hist_btn = tk.Button(
@@ -94,6 +95,13 @@ class CalculatorApp:
             command=lambda: self.switch_sidebar_tab("Converter")
         )
         self.tab_conv_btn.pack(side="left", fill="x", expand=True, padx=2)
+
+        self.tab_guide_btn = tk.Button(
+            self.sidebar_tabs_frame, text="Guide", bg="#48484A", fg="#FFFFFF",
+            font=("Segoe UI", 9, "bold"), bd=0, relief="flat", padx=10, pady=5,
+            command=lambda: self.switch_sidebar_tab("Guide")
+        )
+        self.tab_guide_btn.pack(side="left", fill="x", expand=True, padx=2)
 
         # --- 1. History Tab Widgets ---
         list_frame = tk.Frame(self.tab_history, bg="#2C2C2E")
@@ -140,6 +148,29 @@ class CalculatorApp:
 
         # --- 3. Converter Tab (Managed by Controller) ---
         self.converter_controller = ConverterController(self, self.tab_conv)
+
+        # --- 4. Guide Tab Widgets ---
+        help_text_frame = tk.Frame(self.tab_guide, bg="#2C2C2E")
+        help_text_frame.pack(fill="both", expand=True, padx=10, pady=5)
+
+        guide_scrollbar = tk.Scrollbar(help_text_frame)
+        guide_scrollbar.pack(side="right", fill="y")
+
+        self.help_text = tk.Text(
+            help_text_frame,
+            bg="#1C1C1E",
+            fg="#FFFFFF",
+            font=("Segoe UI", 9),
+            wrap="word",
+            bd=0,
+            highlightthickness=0,
+            yscrollcommand=guide_scrollbar.set
+        )
+        self.help_text.pack(side="left", fill="both", expand=True)
+        guide_scrollbar.config(command=self.help_text.yview)
+
+        self.populate_guide_text()
+        self.help_text.config(state="disabled")
 
         # Bind physical keyboard events
         self.root.bind("<Key>", self.on_key_press)
@@ -254,11 +285,13 @@ class CalculatorApp:
         self.tab_hist_btn.config(bg="#48484A")
         self.tab_graph_btn.config(bg="#48484A")
         self.tab_conv_btn.config(bg="#48484A")
+        self.tab_guide_btn.config(bg="#48484A")
 
         # Unpack all frames
         self.tab_history.pack_forget()
         self.tab_graph.pack_forget()
         self.tab_conv.pack_forget()
+        self.tab_guide.pack_forget()
 
         # Switch and highlight
         if tab_name == "History":
@@ -273,6 +306,9 @@ class CalculatorApp:
             self.tab_conv_btn.config(bg="#FF9500")
             self.tab_conv.pack(fill="both", expand=True)
             self.converter_controller.run_conversion()
+        elif tab_name == "Guide":
+            self.tab_guide_btn.config(bg="#FF9500")
+            self.tab_guide.pack(fill="both", expand=True)
 
     def update_history_display(self):
         self.history_listbox.delete(0, tk.END)
@@ -381,6 +417,43 @@ class CalculatorApp:
                 return f"{value:.6e}"
             return res
         return str(value)
+
+    def populate_guide_text(self):
+        # Configure tags for beautiful layout styling
+        self.help_text.tag_config("heading", font=("Segoe UI", 11, "bold"), foreground="#FF9500")
+        self.help_text.tag_config("section", font=("Segoe UI", 10, "bold"), foreground="#30D158")
+        self.help_text.tag_config("bullet", font=("Segoe UI", 9), lmargin1=10, lmargin2=20)
+        
+        self.help_text.insert(tk.END, " SCIENTIFIC CALCULATOR GUIDE\n\n", "heading")
+        
+        self.help_text.insert(tk.END, "⌨️ Keyboard Shortcuts\n", "section")
+        self.help_text.insert(tk.END, "• Enter / Return  =>  Evaluate (=)\n", "bullet")
+        self.help_text.insert(tk.END, "• Backspace       =>  Delete last char (DEL)\n", "bullet")
+        self.help_text.insert(tk.END, "• Escape          =>  Clear display (C)\n", "bullet")
+        self.help_text.insert(tk.END, "• 0-9, ., +, -, *, /, ^, (, ) => Standard keys\n\n", "bullet")
+        
+        self.help_text.insert(tk.END, "📐 Trigonometric Modes\n", "section")
+        self.help_text.insert(tk.END, "• Toggle DEG/RAD mode using the blue mode button.\n", "bullet")
+        self.help_text.insert(tk.END, "• Trigonometric functions (sin, cos, tan) and inverse functions (asin, acos, atan) automatically respect the active mode.\n\n", "bullet")
+        
+        self.help_text.insert(tk.END, "🧠 Memory Operations\n", "section")
+        self.help_text.insert(tk.END, "• MC  =>  Clear memory\n", "bullet")
+        self.help_text.insert(tk.END, "• MR  =>  Recall memory to display\n", "bullet")
+        self.help_text.insert(tk.END, "• M+  =>  Add current expression result to memory\n", "bullet")
+        self.help_text.insert(tk.END, "• M-  =>  Subtract current expression result from memory\n", "bullet")
+        self.help_text.insert(tk.END, "• 'M' indicator appears on screen when memory is non-zero.\n\n", "bullet")
+        
+        self.help_text.insert(tk.END, "🌀 Complex Numbers\n", "section")
+        self.help_text.insert(tk.END, "• Use 'i' as the imaginary unit (e.g., '2 + 3i').\n", "bullet")
+        self.help_text.insert(tk.END, "• Real-valued results are formatted dynamically (e.g., 'sqrt(-9)' yields '3i').\n\n", "bullet")
+        
+        self.help_text.insert(tk.END, "📈 2D Canvas Grapher\n", "section")
+        self.help_text.insert(tk.END, "• Switch to Grapher tab, enter expression (e.g., 'sin(x)'), and click 'Plot Function'.\n", "bullet")
+        self.help_text.insert(tk.END, "• Adjust range using 'x min' and 'x max' entry fields.\n\n", "bullet")
+        
+        self.help_text.insert(tk.END, "🔄 Unit Converter\n", "section")
+        self.help_text.insert(tk.END, "• Select Category (Length, Area, Volume, Speed, Data, Temperature, Mass) and desired units.\n", "bullet")
+        self.help_text.insert(tk.END, "• Enter a value for instant, real-time conversion results.\n", "bullet")
 
     def run(self):
         self.root.mainloop()
