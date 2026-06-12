@@ -100,8 +100,8 @@ class TestPremiumFeatures(unittest.TestCase):
     def test_grapher_plotting(self):
         app = CalculatorApp()
         
-        app.graph_controller.graph_entry.delete(0, tk.END)
-        app.graph_controller.graph_entry.insert(0, "sin(x)")
+        app.graph_controller.graph_entries[0].delete(0, tk.END)
+        app.graph_controller.graph_entries[0].insert(0, "sin(x)")
         
         app.graph_controller.graph_xmin_entry.delete(0, tk.END)
         app.graph_controller.graph_xmin_entry.insert(0, "-10")
