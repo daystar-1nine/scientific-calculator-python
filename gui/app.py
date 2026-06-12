@@ -364,7 +364,8 @@ class CalculatorApp:
             self.update_history_display()
         elif tab_name == "Grapher":
             self.tab_graph.pack(fill="both", expand=True)
-            self.graph_controller.plot_function()
+            # Defer plot so the canvas is fully rendered before drawing
+            self.root.after(20, self.graph_controller.plot_function)
         elif tab_name == "Converter":
             self.tab_conv.pack(fill="both", expand=True)
             self.converter_controller.run_conversion()
