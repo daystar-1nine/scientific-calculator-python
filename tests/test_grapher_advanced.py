@@ -76,5 +76,47 @@ class TestGrapherAdvanced(unittest.TestCase):
             os.remove(temp_png)
 
 
+    def test_polar_graphing(self):
+        # Switch to Polar mode
+        self.app.graph_controller.graph_mode.set("Polar")
+        self.app.graph_controller.on_mode_change()
+        
+        # Verify theta range and default equation are set
+        self.assertEqual(self.app.graph_controller.xmin_label.cget("text"), "θ min:")
+        self.assertEqual(self.app.graph_controller.graph_entries[0].get(), "2 * cos(4 * theta)")
+        
+        # Plot function
+        self.app.graph_controller.plot_function()
+        canvas_items = self.app.graph_controller.graph_canvas.find_all()
+        self.assertTrue(len(canvas_items) > 0)
+
+    def test_parametric_graphing(self):
+        # Switch to Parametric mode
+        self.app.graph_controller.graph_mode.set("Parametric")
+        self.app.graph_controller.on_mode_change()
+        
+        # Verify t range is set
+        self.assertEqual(self.app.graph_controller.xmin_label.cget("text"), "t min:")
+        
+        # Plot
+        self.app.graph_controller.plot_function()
+        canvas_items = self.app.graph_controller.graph_canvas.find_all()
+        self.assertTrue(len(canvas_items) > 0)
+
+    def test_cartesian_key_points(self):
+        # Switch to Cartesian and enable key points
+        self.app.graph_controller.graph_mode.set("Cartesian")
+        self.app.graph_controller.on_mode_change()
+        self.app.graph_controller.show_key_points.set(True)
+        
+        # f(x) = x^2 - 4
+        self.app.graph_controller.graph_entries[0].delete(0, tk.END)
+        self.app.graph_controller.graph_entries[0].insert(0, "x^2 - 4")
+        
+        self.app.graph_controller.plot_function()
+        canvas_items = self.app.graph_controller.graph_canvas.find_all()
+        self.assertTrue(len(canvas_items) > 0)
+
+
 if __name__ == "__main__":
     unittest.main()

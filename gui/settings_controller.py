@@ -12,6 +12,14 @@ class SettingsController:
         self.tab_frame = tab_frame
 
         self.current_theme = tk.StringVar(value="Midnight")
+        self.audio_profile = getattr(self.app, "audio_profile", None)
+        if not self.audio_profile:
+            self.audio_profile = tk.StringVar(value="Off")
+            self.app.audio_profile = self.audio_profile
+        self.audio_volume = getattr(self.app, "audio_volume", None)
+        if not self.audio_volume:
+            self.audio_volume = tk.IntVar(value=50)
+            self.app.audio_volume = self.audio_volume
         
         self.themes = {
             "Midnight": {
@@ -109,6 +117,36 @@ class SettingsController:
         )
         layout_menu["menu"].config(bg="#2C2C2E", fg="#FFFFFF", font=("Segoe UI", 9, "bold"))
         layout_menu.pack(side="left", fill="x", expand=True)
+
+        # 1.6 Keypad Audio Frame
+        audio_frame = tk.LabelFrame(
+            self.tab_frame, text="Keypad Audio Feedback", fg="#FFFFFF", bg="#2C2C2E",
+            font=("Segoe UI", 9, "bold"), padx=10, pady=10
+        )
+        audio_frame.pack(fill="x", padx=10, pady=10)
+
+        tk.Label(audio_frame, text="Sound Profile:", fg="#D1D1D6", bg="#2C2C2E", font=("Segoe UI", 8, "bold")).pack(side="left", padx=(0, 5))
+        
+        audio_menu = tk.OptionMenu(
+            audio_frame,
+            self.audio_profile,
+            "Off", "Mechanical Click", "Soft Pop", "Retro Beep",
+            command=self.change_audio_profile
+        )
+        audio_menu.config(
+            bg="#48484A", fg="#FFFFFF", font=("Segoe UI", 9, "bold"),
+            bd=0, relief="flat", highlightthickness=0
+        )
+        audio_menu["menu"].config(bg="#2C2C2E", fg="#FFFFFF", font=("Segoe UI", 9, "bold"))
+        audio_menu.pack(side="left", padx=(0, 15))
+
+        tk.Label(audio_frame, text="Volume:", fg="#D1D1D6", bg="#2C2C2E", font=("Segoe UI", 8, "bold")).pack(side="left", padx=(0, 5))
+        
+        volume_scale = tk.Scale(
+            audio_frame, from_=0, to=100, orient="horizontal", variable=self.audio_volume,
+            bg="#2C2C2E", fg="#FFFFFF", highlightthickness=0, font=("Segoe UI", 8, "bold")
+        )
+        volume_scale.pack(side="left", fill="x", expand=True)
 
         # 2. Exporters Frame
         export_frame = tk.LabelFrame(
@@ -272,3 +310,8 @@ class SettingsController:
             self.show_status(f"Keypad layout successfully changed to {layout_name}.")
         except Exception as e:
             self.show_status(f"Layout toggle error:\n{handle_error(e)}")
+
+    def change_audio_profile(self, profile_name):
+        if hasattr(self.app, "play_click_sound"):
+            self.app.play_click_sound()
+        self.show_status(f"Keypad audio profile successfully changed to {profile_name}.")

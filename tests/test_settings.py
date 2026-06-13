@@ -126,6 +126,25 @@ class TestSettingsPanel(unittest.TestCase):
         # sin button should be gridded again
         self.assertTrue(bool(sin_btn.winfo_manager()))
 
+    def test_keypad_audio_feedback(self):
+        # Default state
+        self.assertEqual(self.app.audio_profile.get(), "Off")
+        self.assertEqual(self.app.audio_volume.get(), 50)
+
+        # Mock play_click_sound to verify it is called on profile change
+        with patch.object(self.app, "play_click_sound") as mock_play:
+            self.app.settings_controller.audio_profile.set("Mechanical Click")
+            self.app.settings_controller.change_audio_profile("Mechanical Click")
+            mock_play.assert_called_once()
+            
+            # Check status message
+            status = self.app.settings_controller.status_text.get("1.0", tk.END).strip()
+            self.assertIn("audio profile successfully changed to Mechanical Click", status)
+
+        # Verify button clicks trigger click sound
+        with patch.object(self.app, "play_click_sound") as mock_play:
+            self.app.on_button_click("1")
+            mock_play.assert_called_once()
 
 if __name__ == "__main__":
     unittest.main()

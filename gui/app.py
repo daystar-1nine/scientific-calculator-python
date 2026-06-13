@@ -20,6 +20,9 @@ from gui.vector_controller import VectorController
 from gui.formula_controller import FormulaController
 from gui.finance_controller import FinanceController
 from gui.settings_controller import SettingsController
+from gui.cas_controller import CASController
+from gui.hypothesis_testing_controller import HypothesisTestingController
+from gui.simulations_controller import SimulationsController
 from core.evaluator import Evaluator
 from core.modes import CalculatorMode
 from features.memory import Memory
@@ -42,6 +45,10 @@ class CalculatorApp:
         self.memory = Memory()
         self.history = History()
         self.custom_functions = {}
+
+        # Keypad Audio Settings
+        self.audio_profile = tk.StringVar(value="Off")
+        self.audio_volume = tk.IntVar(value=50)
 
         # GUI Setup
         self.root.configure(bg="#1C1C1E")
@@ -81,7 +88,7 @@ class CalculatorApp:
         self.tab_selector = tk.OptionMenu(
             self.sidebar_tabs_frame,
             self.tab_selector_var,
-            "History", "Grapher", "3D Grapher", "Converter", "Complex Tool", "Matrix", "Solver", "Stats", "Base-N", "Vars/Consts", "Vectors", "Formulas", "Finance", "Settings", "Guide",
+            "History", "Grapher", "3D Grapher", "Converter", "Complex Tool", "Matrix", "Solver", "Stats", "Base-N", "Vars/Consts", "Vectors", "Formulas", "Finance", "CAS Tool", "Hypothesis", "Simulations", "Settings", "Guide",
             command=self.switch_sidebar_tab
         )
         self.tab_selector.config(
@@ -112,6 +119,9 @@ class CalculatorApp:
         self.tab_vector = tk.Frame(self.sidebar_content_frame, bg="#2C2C2E")
         self.tab_formula = tk.Frame(self.sidebar_content_frame, bg="#2C2C2E")
         self.tab_finance = tk.Frame(self.sidebar_content_frame, bg="#2C2C2E")
+        self.tab_cas = tk.Frame(self.sidebar_content_frame, bg="#2C2C2E")
+        self.tab_hypothesis = tk.Frame(self.sidebar_content_frame, bg="#2C2C2E")
+        self.tab_simulations = tk.Frame(self.sidebar_content_frame, bg="#2C2C2E")
         self.tab_settings = tk.Frame(self.sidebar_content_frame, bg="#2C2C2E")
         self.tab_guide = tk.Frame(self.sidebar_content_frame, bg="#2C2C2E")
 
@@ -191,6 +201,15 @@ class CalculatorApp:
         # --- 11. Finance Tab (Managed by Controller) ---
         self.finance_controller = FinanceController(self, self.tab_finance)
 
+        # --- 11b. CAS Tab ---
+        self.cas_controller = CASController(self, self.tab_cas)
+
+        # --- 11c. Hypothesis Testing Tab ---
+        self.hypothesis_testing_controller = HypothesisTestingController(self, self.tab_hypothesis)
+
+        # --- 11d. Simulations Tab ---
+        self.simulations_controller = SimulationsController(self, self.tab_simulations)
+
         # --- 12. Settings Tab (Managed by Controller) ---
         self.settings_controller = SettingsController(self, self.tab_settings)
 
@@ -224,18 +243,19 @@ class CalculatorApp:
         self.switch_sidebar_tab(self.active_tab)
 
     def on_button_click(self, char):
+        self.play_click_sound()
         current_text = self.display.get_text()
 
         # Handle clear
-        if char == "C":
+        if char in ["C", "CLEAR"]:
             self.display.clear()
 
         # Handle backspace
-        elif char == "DEL":
+        elif char in ["DEL", "DELETE"]:
             self.display.set_text(current_text[:-1])
 
         # Handle Mode Toggle
-        elif char == "DEG":
+        elif char in ["DEG", "MODE"]:
             mode = self.mode_manager.get_mode()
             if mode == CalculatorMode.DEGREE:
                 self.mode_manager.set_radian()
@@ -244,13 +264,13 @@ class CalculatorApp:
             self.update_mode_button_text()
 
         # Handle Memory operations
-        elif char == "MC":
+        elif char in ["MC", "MEM_CLEAR"]:
             self.memory.clear()
             self.update_memory_indicator()
-        elif char == "MR":
+        elif char in ["MR", "MEM_RECALL"]:
             val = self.memory.recall()
             self.display.append(self.format_result(val))
-        elif char == "M+":
+        elif char in ["M+", "MEM_ADD"]:
             if current_text:
                 try:
                     vars_dict = {}
@@ -261,7 +281,7 @@ class CalculatorApp:
                     self.update_memory_indicator()
                 except Exception as e:
                     self.display.set_text(handle_error(e))
-        elif char == "M-":
+        elif char in ["M-", "MEM_SUB"]:
             if current_text:
                 try:
                     vars_dict = {}
@@ -274,15 +294,15 @@ class CalculatorApp:
                     self.display.set_text(handle_error(e))
  
         # Handle History toggle
-        elif char == "HIST":
+        elif char in ["HIST", "TOGGLE_HISTORY"]:
             self.toggle_history()
  
         # Handle Theme Cycle
-        elif char == "THEME":
+        elif char in ["THEME"]:
             self.cycle_theme()
  
         # Handle Equal evaluation
-        elif char == "=":
+        elif char in ["=", "EQUAL"]:
             if not current_text:
                 return
             try:
@@ -355,6 +375,10 @@ class CalculatorApp:
         self.active_tab = tab_name
         self.tab_selector_var.set(tab_name)
 
+        # Pause simulations when switching away
+        if tab_name != "Simulations" and hasattr(self, "simulations_controller"):
+            self.simulations_controller.pause()
+
         # Unpack all frames
         self.tab_history.pack_forget()
         self.tab_graph.pack_forget()
@@ -369,6 +393,9 @@ class CalculatorApp:
         self.tab_vector.pack_forget()
         self.tab_formula.pack_forget()
         self.tab_finance.pack_forget()
+        self.tab_cas.pack_forget()
+        self.tab_hypothesis.pack_forget()
+        self.tab_simulations.pack_forget()
         self.tab_settings.pack_forget()
         self.tab_guide.pack_forget()
 
@@ -405,6 +432,13 @@ class CalculatorApp:
             self.tab_formula.pack(fill="both", expand=True)
         elif tab_name == "Finance":
             self.tab_finance.pack(fill="both", expand=True)
+        elif tab_name == "CAS Tool":
+            self.tab_cas.pack(fill="both", expand=True)
+        elif tab_name == "Hypothesis":
+            self.tab_hypothesis.pack(fill="both", expand=True)
+        elif tab_name == "Simulations":
+            self.tab_simulations.pack(fill="both", expand=True)
+            self.root.after(20, self.simulations_controller.redraw)
         elif tab_name == "Settings":
             self.tab_settings.pack(fill="both", expand=True)
         elif tab_name == "Guide":
@@ -517,6 +551,40 @@ class CalculatorApp:
                 return f"{value:.6e}"
             return res
         return str(value)
+
+    def play_click_sound(self):
+        profile = self.audio_profile.get()
+        volume = self.audio_volume.get()
+        if profile == "Off" or volume == 0:
+            return
+            
+        try:
+            import winsound
+            import os
+            media_dir = "C:\\Windows\\Media"
+            
+            if profile == "Mechanical Click":
+                path = os.path.join(media_dir, "Windows Navigation Start.wav")
+                if os.path.exists(path):
+                    winsound.PlaySound(path, winsound.SND_FILENAME | winsound.SND_ASYNC)
+                else:
+                    winsound.PlaySound("SystemDefault", winsound.SND_ALIAS | winsound.SND_ASYNC)
+                    
+            elif profile == "Soft Pop":
+                path = os.path.join(media_dir, "Windows Pop-up Blocked.wav")
+                if os.path.exists(path):
+                    winsound.PlaySound(path, winsound.SND_FILENAME | winsound.SND_ASYNC)
+                else:
+                    winsound.PlaySound("SystemAsterisk", winsound.SND_ALIAS | winsound.SND_ASYNC)
+                    
+            elif profile == "Retro Beep":
+                path = os.path.join(media_dir, "ding.wav")
+                if os.path.exists(path):
+                    winsound.PlaySound(path, winsound.SND_FILENAME | winsound.SND_ASYNC)
+                else:
+                    winsound.PlaySound("SystemDefault", winsound.SND_ALIAS | winsound.SND_ASYNC)
+        except Exception:
+            pass
 
     def populate_guide_text(self):
         # Configure tags for beautiful layout styling

@@ -73,8 +73,8 @@ class GraphController:
         graph_range_frame = tk.Frame(self.tab_frame, bg="#2C2C2E")
         graph_range_frame.pack(fill="x", padx=10, pady=2)
 
-        xmin_label = tk.Label(graph_range_frame, text="x min:", fg="#D1D1D6", bg="#2C2C2E", font=("Segoe UI", 9, "bold"))
-        xmin_label.pack(side="left", padx=(0, 2))
+        self.xmin_label = tk.Label(graph_range_frame, text="x min:", fg="#D1D1D6", bg="#2C2C2E", font=("Segoe UI", 9, "bold"))
+        self.xmin_label.pack(side="left", padx=(0, 2))
 
         self.graph_xmin_entry = tk.Entry(
             graph_range_frame,
@@ -89,8 +89,8 @@ class GraphController:
         self.graph_xmin_entry.pack(side="left", fill="x", expand=True, padx=(0, 10))
         self.graph_xmin_entry.insert(0, "-10")
 
-        xmax_label = tk.Label(graph_range_frame, text="x max:", fg="#D1D1D6", bg="#2C2C2E", font=("Segoe UI", 9, "bold"))
-        xmax_label.pack(side="left", padx=(0, 2))
+        self.xmax_label = tk.Label(graph_range_frame, text="x max:", fg="#D1D1D6", bg="#2C2C2E", font=("Segoe UI", 9, "bold"))
+        self.xmax_label.pack(side="left", padx=(0, 2))
 
         self.graph_xmax_entry = tk.Entry(
             graph_range_frame,
@@ -104,6 +104,33 @@ class GraphController:
         )
         self.graph_xmax_entry.pack(side="left", fill="x", expand=True)
         self.graph_xmax_entry.insert(0, "10")
+
+        # Mode & Key Points Selection Frame
+        mode_frame = tk.Frame(self.tab_frame, bg="#2C2C2E")
+        mode_frame.pack(fill="x", padx=10, pady=2)
+
+        tk.Label(mode_frame, text="Mode:", fg="#D1D1D6", bg="#2C2C2E", font=("Segoe UI", 8, "bold")).pack(side="left")
+        self.graph_mode = tk.StringVar(value="Cartesian")
+        mode_menu = tk.OptionMenu(
+            mode_frame, self.graph_mode,
+            "Cartesian", "Polar", "Parametric",
+            command=self.on_mode_change
+        )
+        mode_menu.config(
+            bg="#48484A", fg="#FFFFFF", font=("Segoe UI", 8, "bold"),
+            bd=0, relief="flat", highlightthickness=0
+        )
+        mode_menu["menu"].config(bg="#2C2C2E", fg="#FFFFFF", font=("Segoe UI", 8, "bold"))
+        mode_menu.pack(side="left", padx=5)
+
+        self.show_key_points = tk.BooleanVar(value=False)
+        self.key_points_cb = tk.Checkbutton(
+            mode_frame, text="Show Key Points", variable=self.show_key_points,
+            fg="#FFFFFF", bg="#2C2C2E", selectcolor="#1C1C1E",
+            activebackground="#2C2C2E", activeforeground="#FFFFFF",
+            font=("Segoe UI", 8, "bold"), command=self.plot_function
+        )
+        self.key_points_cb.pack(side="right", padx=5)
 
         # 3. Zoom Controls & Export Frame
         control_frame = tk.Frame(self.tab_frame, bg="#2C2C2E")
@@ -201,83 +228,162 @@ class GraphController:
         self.graph_canvas.delete("all")
         W = self.graph_canvas.winfo_width()
         H = self.graph_canvas.winfo_height()
-        # Use sensible fallback if canvas not yet rendered
         if W <= 1:
             W = 300
         if H <= 1:
             H = 280
 
-        # Parse custom range
+        # Parse range
         try:
-            xmin = float(self.graph_xmin_entry.get().strip())
-            xmax = float(self.graph_xmax_entry.get().strip())
-            if xmin >= xmax:
-                raise ValueError("xmin >= xmax")
+            pmin = float(self.graph_xmin_entry.get().strip())
+            pmax = float(self.graph_xmax_entry.get().strip())
+            if pmin >= pmax:
+                self._draw_error(W, H, "Invalid X range (xmin must be < xmax)")
+                return
         except Exception:
-            self._draw_error(W, H, "Invalid X range (xmin must be < xmax)")
+            self._draw_error(W, H, "Invalid range")
             return
 
+        mode_name = self.graph_mode.get()
         mode = self.app.mode_manager.get_mode()
-        N = max(W, 300)  # Resolution: at least one point per pixel
-        x_vals = [xmin + (xmax - xmin) * i / (N - 1) for i in range(N)]
+        N = 500
 
         all_curves_pts = []
         all_valid_y = []
+        all_valid_x = []
         plotted_count = 0
 
-        for entry in self.graph_entries:
-            expr = entry.get().strip()
-            if not expr:
-                all_curves_pts.append([])
-                continue
+        if mode_name == "Cartesian":
+            xmin, xmax = pmin, pmax
+            x_vals = [xmin + (xmax - xmin) * i / (N - 1) for i in range(N)]
 
-            plotted_count += 1
-            pts = []
-            for x in x_vals:
-                try:
-                    y = self.app.evaluator.evaluate(expr, mode, variables={"x": x})
-                    if isinstance(y, complex):
-                        if abs(y.imag) < 1e-10:
-                            y = y.real
+            for entry in self.graph_entries:
+                expr = entry.get().strip()
+                if not expr:
+                    all_curves_pts.append([])
+                    continue
+
+                plotted_count += 1
+                pts = []
+                for x in x_vals:
+                    try:
+                        y = self.app.evaluator.evaluate(expr, mode, variables={"x": x})
+                        if isinstance(y, complex):
+                            if abs(y.imag) < 1e-10:
+                                y = y.real
+                            else:
+                                pts.append((x, None))
+                                continue
+                        if isinstance(y, (int, float)) and math.isfinite(y):
+                            pts.append((x, float(y)))
+                            all_valid_y.append(float(y))
                         else:
                             pts.append((x, None))
-                            continue
-                    if isinstance(y, (int, float)) and math.isfinite(y):
-                        pts.append((x, float(y)))
-                        all_valid_y.append(float(y))
-                    else:
+                    except Exception:
                         pts.append((x, None))
+                all_curves_pts.append(pts)
+
+            if not all_valid_y:
+                if plotted_count == 0:
+                    self._draw_placeholder(W, H)
+                else:
+                    self._draw_error(W, H, "No plottable values found")
+                return
+
+            sorted_y = sorted(all_valid_y)
+            n = len(sorted_y)
+            if n > 20:
+                p2 = sorted_y[max(0, int(n * 0.02))]
+                p98 = sorted_y[min(n - 1, int(n * 0.98))]
+                margin = (p98 - p2) * 0.15 if p98 > p2 else 1.0
+                ymin = p2 - margin
+                ymax = p98 + margin
+            else:
+                ymin = min(all_valid_y)
+                ymax = max(all_valid_y)
+                margin = (ymax - ymin) * 0.1 if ymax > ymin else 1.0
+                ymin -= margin
+                ymax += margin
+
+        elif mode_name == "Polar":
+            expr = self.graph_entries[0].get().strip()
+            if not expr:
+                self._draw_placeholder(W, H)
+                return
+            plotted_count = 1
+            pts = []
+            for i in range(N):
+                theta = pmin + (pmax - pmin) * i / (N - 1)
+                try:
+                    r = self.app.evaluator.evaluate(expr, mode, variables={"theta": theta})
+                    if isinstance(r, complex):
+                        r = r.real
+                    if isinstance(r, (int, float)) and math.isfinite(r):
+                        x = r * math.cos(theta)
+                        y = r * math.sin(theta)
+                        pts.append((x, y))
+                        all_valid_x.append(x)
+                        all_valid_y.append(y)
                 except Exception:
-                    pts.append((x, None))
+                    pass
             all_curves_pts.append(pts)
 
-        if not all_valid_y:
-            if plotted_count == 0:
-                self._draw_placeholder(W, H)
-            else:
+            if not all_valid_y or not all_valid_x:
                 self._draw_error(W, H, "No plottable values found")
-            return
+                return
 
-        # Auto Y-range using interquartile range to gracefully handle asymptotes
-        sorted_y = sorted(all_valid_y)
-        n = len(sorted_y)
-        if n > 20:
-            p2 = sorted_y[max(0, int(n * 0.02))]
-            p98 = sorted_y[min(n - 1, int(n * 0.98))]
-            margin = (p98 - p2) * 0.15 if p98 > p2 else 1.0
-            ymin = p2 - margin
-            ymax = p98 + margin
-        else:
-            ymin = min(all_valid_y)
-            ymax = max(all_valid_y)
-            margin = (ymax - ymin) * 0.1 if ymax > ymin else 1.0
-            ymin -= margin
-            ymax += margin
+            xmin, xmax = min(all_valid_x), max(all_valid_x)
+            ymin, ymax = min(all_valid_y), max(all_valid_y)
+            margin_x = (xmax - xmin) * 0.15 or 1.0
+            margin_y = (ymax - ymin) * 0.15 or 1.0
+            xmin -= margin_x
+            xmax += margin_x
+            ymin -= margin_y
+            ymax += margin_y
+
+        elif mode_name == "Parametric":
+            expr_x = self.graph_entries[0].get().strip()
+            expr_y = self.graph_entries[1].get().strip()
+            if not expr_x or not expr_y:
+                self._draw_placeholder(W, H)
+                return
+            plotted_count = 2
+            pts = []
+            for i in range(N):
+                t = pmin + (pmax - pmin) * i / (N - 1)
+                try:
+                    x = self.app.evaluator.evaluate(expr_x, mode, variables={"t": t})
+                    y = self.app.evaluator.evaluate(expr_y, mode, variables={"t": t})
+                    if isinstance(x, complex): x = x.real
+                    if isinstance(y, complex): y = y.real
+                    if isinstance(x, (int, float)) and isinstance(y, (int, float)) and math.isfinite(x) and math.isfinite(y):
+                        pts.append((x, y))
+                        all_valid_x.append(x)
+                        all_valid_y.append(y)
+                except Exception:
+                    pass
+            all_curves_pts.append(pts)
+
+            if not all_valid_y or not all_valid_x:
+                self._draw_error(W, H, "No plottable values found")
+                return
+
+            xmin, xmax = min(all_valid_x), max(all_valid_x)
+            ymin, ymax = min(all_valid_y), max(all_valid_y)
+            margin_x = (xmax - xmin) * 0.15 or 1.0
+            margin_y = (ymax - ymin) * 0.15 or 1.0
+            xmin -= margin_x
+            xmax += margin_x
+            ymin -= margin_y
+            ymax += margin_y
 
         # Prevent flat lines
         if abs(ymax - ymin) < 1e-9:
             ymin -= 1.0
             ymax += 1.0
+        if abs(xmax - xmin) < 1e-9:
+            xmin -= 1.0
+            xmax += 1.0
 
         # Save viewport state for hover tracing
         self.last_xmin = xmin
@@ -347,6 +453,10 @@ class GraphController:
                 continue
             self._draw_curve(pts, self.colors[i], to_px, to_py, H)
 
+        # --- Draw key points ---
+        if self.show_key_points.get() and mode_name == "Cartesian":
+            self._find_and_draw_key_points(W, H, xmin, xmax, ymin, ymax, to_px, to_py)
+
         # --- Y range labels ---
         self.graph_canvas.create_text(
             W - 4, 4,
@@ -363,7 +473,12 @@ class GraphController:
         expr_list = ", ".join(
             e.get().strip() for e in self.graph_entries if e.get().strip()
         )
-        self.status_var.set(f"Plotted: {expr_list} | x∈[{xmin:.3g}, {xmax:.3g}]")
+        if mode_name == "Cartesian":
+            self.status_var.set(f"Plotted: {expr_list} | x∈[{xmin:.3g}, {xmax:.3g}]")
+        elif mode_name == "Polar":
+            self.status_var.set(f"Plotted Polar Rose | θ∈[{pmin:.3g}, {pmax:.3g}]")
+        else:
+            self.status_var.set(f"Plotted Parametric Curve | t∈[{pmin:.3g}, {pmax:.3g}]")
 
     def _draw_curve(self, pts, color, to_px, to_py, H):
         """Draw a single curve with gap detection at discontinuities."""
@@ -750,3 +865,155 @@ class GraphController:
             self.status_var.set(f"Exported: {filepath}")
         except Exception as ex:
             messagebox.showerror("Export Failed", str(ex))
+
+    def on_mode_change(self, *args):
+        m = self.graph_mode.get()
+        if m == "Cartesian":
+            self.xmin_label.config(text="x min:")
+            self.xmax_label.config(text="x max:")
+            self.graph_xmin_entry.delete(0, tk.END)
+            self.graph_xmin_entry.insert(0, "-10")
+            self.graph_xmax_entry.delete(0, tk.END)
+            self.graph_xmax_entry.insert(0, "10")
+            self.graph_entries[0].master.pack(fill="x", pady=2)
+            self.graph_entries[1].master.pack(fill="x", pady=2)
+            self.graph_entries[2].master.pack(fill="x", pady=2)
+            self.graph_entries[0].delete(0, tk.END)
+            self.graph_entries[0].insert(0, "sin(x)")
+            self.graph_entries[1].delete(0, tk.END)
+            self.graph_entries[2].delete(0, tk.END)
+        elif m == "Polar":
+            self.xmin_label.config(text="θ min:")
+            self.xmax_label.config(text="θ max:")
+            self.graph_xmin_entry.delete(0, tk.END)
+            self.graph_xmin_entry.insert(0, "0")
+            self.graph_xmax_entry.delete(0, tk.END)
+            self.graph_xmax_entry.insert(0, "6.28318")
+            self.graph_entries[0].delete(0, tk.END)
+            self.graph_entries[0].insert(0, "2 * cos(4 * theta)")
+            self.graph_entries[0].master.pack(fill="x", pady=2)
+            self.graph_entries[1].master.pack_forget()
+            self.graph_entries[2].master.pack_forget()
+        elif m == "Parametric":
+            self.xmin_label.config(text="t min:")
+            self.xmax_label.config(text="t max:")
+            self.graph_xmin_entry.delete(0, tk.END)
+            self.graph_xmin_entry.insert(0, "0")
+            self.graph_xmax_entry.delete(0, tk.END)
+            self.graph_xmax_entry.insert(0, "6.28318")
+            self.graph_entries[0].master.pack(fill="x", pady=2)
+            self.graph_entries[1].master.pack(fill="x", pady=2)
+            self.graph_entries[2].master.pack_forget()
+            self.graph_entries[0].delete(0, tk.END)
+            self.graph_entries[0].insert(0, "sin(2 * t)")
+            self.graph_entries[1].delete(0, tk.END)
+            self.graph_entries[1].insert(0, "sin(3 * t)")
+        self.plot_function()
+
+    def _find_and_draw_key_points(self, W, H, xmin, xmax, ymin, ymax, to_px, to_py):
+        mode = self.app.mode_manager.get_mode()
+        exprs = []
+        for i, entry in enumerate(self.graph_entries):
+            expr = entry.get().strip()
+            if expr:
+                exprs.append((expr, self.colors[i]))
+        if not exprs:
+            return
+
+        def eval_f(expr, val):
+            try:
+                res = self.app.evaluator.evaluate(expr, mode, variables={"x": val})
+                if isinstance(res, complex):
+                    res = res.real
+                return float(res) if math.isfinite(res) else None
+            except Exception:
+                return None
+
+        def eval_df(expr, val, h=1e-5):
+            y_h = eval_f(expr, val + h)
+            y_mh = eval_f(expr, val - h)
+            if y_h is not None and y_mh is not None:
+                return (y_h - y_mh) / (2 * h)
+            return None
+
+        def bisect(g_func, x1, x2, tol=1e-5, max_iter=30):
+            y1, y2 = g_func(x1), g_func(x2)
+            if y1 is None or y2 is None or y1 * y2 > 0:
+                return None
+            for _ in range(max_iter):
+                mid = (x1 + x2) / 2.0
+                ymid = g_func(mid)
+                if ymid is None:
+                    return None
+                if abs(ymid) < tol or abs(x2 - x1) < tol:
+                    return mid
+                if y1 * ymid < 0:
+                    x2 = mid
+                    y2 = ymid
+                else:
+                    x1 = mid
+                    y1 = ymid
+            return (x1 + x2) / 2.0
+
+        steps = 80
+        dx = (xmax - xmin) / steps
+        roots_found = set()
+        extrema_found = set()
+        intersections_found = set()
+
+        for expr, color in exprs:
+            for i in range(steps):
+                x1 = xmin + i * dx
+                x2 = x1 + dx
+
+                r = bisect(lambda x: eval_f(expr, x), x1, x2)
+                if r is not None and xmin <= r <= xmax:
+                    y_r = eval_f(expr, r)
+                    if y_r is not None and abs(y_r) < 1e-3:
+                        if not any(abs(r - val) < 1e-2 for val in roots_found):
+                            roots_found.add(r)
+                            px, py = to_px(r), to_py(y_r)
+                            if 0 <= px <= W and 0 <= py <= H:
+                                self.graph_canvas.create_oval(px - 4, py - 4, px + 4, py + 4, fill="#FF3B30", outline="#FFFFFF", width=1)
+                                label = f"({self.app.format_result(r)}, 0)"
+                                self.graph_canvas.create_text(px, py - 10, text=label, fill="#FF3B30", font=("Segoe UI", 7, "bold"))
+
+                e = bisect(lambda x: eval_df(expr, x), x1, x2)
+                if e is not None and xmin <= e <= xmax:
+                    y_e = eval_f(expr, e)
+                    if y_e is not None:
+                        if not any(abs(e - val) < 1e-2 for val in extrema_found):
+                            extrema_found.add(e)
+                            px, py = to_px(e), to_py(y_e)
+                            if 0 <= px <= W and 0 <= py <= H:
+                                self.graph_canvas.create_oval(px - 4, py - 4, px + 4, py + 4, fill="#0A84FF", outline="#FFFFFF", width=1)
+                                label = f"({self.app.format_result(e)}, {self.app.format_result(y_e)})"
+                                self.graph_canvas.create_text(px, py - 10, text=label, fill="#0A84FF", font=("Segoe UI", 7, "bold"))
+
+        if len(exprs) >= 2:
+            for idx1 in range(len(exprs)):
+                for idx2 in range(idx1 + 1, len(exprs)):
+                    e1, _ = exprs[idx1]
+                    e2, _ = exprs[idx2]
+                    for i in range(steps):
+                        x1 = xmin + i * dx
+                        x2 = x1 + dx
+                        
+                        def diff_val(x):
+                            v1 = eval_f(e1, x)
+                            v2 = eval_f(e2, x)
+                            if v1 is not None and v2 is not None:
+                                return v1 - v2
+                            return None
+                            
+                        sect = bisect(diff_val, x1, x2)
+                        if sect is not None and xmin <= sect <= xmax:
+                            y_sect = eval_f(e1, sect)
+                            if y_sect is not None:
+                                if not any(abs(sect - val) < 1e-2 for val in intersections_found):
+                                    intersections_found.add(sect)
+                                    px, py = to_px(sect), to_py(y_sect)
+                                    if 0 <= px <= W and 0 <= py <= H:
+                                        self.graph_canvas.create_oval(px - 4, py - 4, px + 4, py + 4, fill="#5856D6", outline="#FFFFFF", width=1)
+                                        label = f"({self.app.format_result(sect)}, {self.app.format_result(y_sect)})"
+                                        self.graph_canvas.create_text(px, py + 10, text=label, fill="#5856D6", font=("Segoe UI", 7, "bold"))
